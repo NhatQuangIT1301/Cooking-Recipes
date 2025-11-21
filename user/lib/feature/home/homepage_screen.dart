@@ -1,43 +1,81 @@
-
 import 'aboutus_screen.dart';
 import 'contactus_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// SỬA LỖI IMPORT: Dùng đường dẫn tương đối
 import '../ai/voice_search_screen.dart';
 import '../recipe/add_recipe_screen.dart';
 import '../recipe/blog_screen.dart';
-import 'settings_screen.dart'; // Cùng thư mục 'core'
+import 'settings_screen.dart';
 import '../scan/ingredient_scanner_screen.dart';
 import '../recipe/markdown_recipe_screen.dart';
 import '../recipe/my_recipes_screen.dart';
-import 'filter_screen.dart'; // Cùng thư mục 'core'
+import 'filter_screen.dart';
 import '../scan/qr_scanner_screen.dart';
 import '../auth/login_screen.dart';
 import 'pantry_screen.dart';
 import 'notifications_screen.dart';
+import '../recipe/blog_screen.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final List<String>? suggestedMeals;
+
+  const HomePage({
+    super.key,
+    this.suggestedMeals,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // Quản lý state trực tiếp
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
-  int _selectedIndex = 0;
-
-  // SỬA ĐỔI: Thêm PageController cho banner
   late PageController _pageController;
-
-  // Khóa cho Scaffold (nếu cần mở Drawer)
+  int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // SỬA ĐỔI: Danh sách ảnh cho carousel
+  // --- TODO 1: MODEL DỮ LIỆU (Giả lập Database) ---
+  // Sau này bạn sẽ thay thế cái này bằng dữ liệu lấy từ API Node.js
+  final List<Map<String, dynamic>> _allRecipes = [
+    {
+      "id": "1",
+      "title": "Creamy Garlic Pasta",
+      "description": "A delicious creamy pasta with garlic sauce.",
+      "image": "https://images.unsplash.com/photo-1581007871115-f14bc016e0a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
+      "time": "25 min",
+      "servings": "4",
+      "isFavorite": false,
+      "category": "Dinner"
+    },
+    {
+      "id": "2",
+      "title": "Berry Smoothie Bowl",
+      "description": "Healthy breakfast with fresh berries.",
+      "image": "https://images.unsplash.com/photo-1626078436812-7c7254ba0b48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
+      "time": "10 min",
+      "servings": "1",
+      "isFavorite": true,
+      "category": "Breakfast"
+    },
+    {
+      "id": "3",
+      "title": "Grilled Chicken Salad",
+      "description": "Fresh salad with grilled chicken breast.",
+      "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
+      "time": "20 min",
+      "servings": "2",
+      "isFavorite": false,
+      "category": "Lunch"
+    },
+  ];
+
+  // --- TODO 2: BIẾN ĐỂ LỌC DỮ LIỆU ---
+  String _searchQuery = "";
+  String _selectedCategory = "All";
+  final List<String> _categories = ["All", "Breakfast", "Lunch", "Dinner", "Dessert"];
+
   final List<Map<String, String>> _carouselItems = [
     {"image": "assets/images/bunbo.jpg", "title": "Bún Bò Huế"},
     {"image": "assets/images/bundau.jpg", "title": "Bún Đậu Mắm Tôm"},
@@ -46,19 +84,17 @@ class _HomePageState extends State<HomePage> {
     {"image": "assets/images/pho.jpg", "title": "Phở Bò"},
   ];
 
-  // Định nghĩa màu sắc (trích xuất từ theme)
+  // Colors
   final Color primaryBackground = const Color(0xFFF1F4F8);
   final Color secondaryBackground = Colors.white;
-  final Color primaryColor = const Color(0xFF568C4C); // Giả định từ file login
-  final Color secondaryText = const Color(0xFF57636C); // Giả định từ file login
+  final Color primaryColor = const Color(0xFF568C4C);
+  final Color secondaryText = const Color(0xFF57636C);
   final Color primaryText = const Color(0xFF15161E);
-  final Color alternateBorder = const Color(0xFFE0E3E7); // Giả định từ file login
-  final Color errorColor = const Color(0xFFFF5963); // Giả định từ file forgot
-  final Color successColor = const Color(0xFF4FB239); // Giả định từ file forgot
+  final Color alternateBorder = const Color(0xFFE0E3E7);
+  final Color errorColor = const Color(0xFFFF5963);
+  final Color successColor = const Color(0xFF4FB239);
   final Color orangeAccent = const Color(0xFFFF6B35);
   final Color lightRedFill = const Color(0xFFFFE8E8);
-  final Color gradientStart = const Color(0xFFB2471F);
-  final Color gradientEnd = const Color(0xFFF7931E);
   final Color shadowColor = const Color(0x1A000000);
 
   @override
@@ -66,35 +102,35 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
-    // Khởi tạo PageController
     _pageController = PageController();
+
+    // --- TODO: GỌI API LẤY RECIPES TỪ SERVER ---
+    // _fetchRecipesFromBackend();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _pageController.dispose(); // Hủy PageController
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // GestureDetector để unfocus khi nhấn ra ngoài
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        key: _scaffoldKey, // Thêm key
+        key: _scaffoldKey,
         backgroundColor: primaryBackground,
         appBar: _buildAppBar(),
         body: _buildBody(),
         bottomNavigationBar: _buildBottomNav(),
-        endDrawer: _buildAppDrawer(), // Thêm Drawer
+        endDrawer: _buildAppDrawer(),
       ),
     );
   }
 
-  // Hàm xây dựng AppBar
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: primaryBackground,
@@ -102,9 +138,7 @@ class _HomePageState extends State<HomePage> {
       elevation: 0.0,
       centerTitle: false,
       title: Row(
-        mainAxisSize: MainAxisSize.max,
         children: [
-          // Avatar
           Container(
             width: 45.0,
             height: 45.0,
@@ -112,62 +146,34 @@ class _HomePageState extends State<HomePage> {
               image: const DecorationImage(
                 fit: BoxFit.cover,
                 image: NetworkImage(
-                  'https://images.unsplash.com/photo-1522075793577-0e6b86be585b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080',
+                  'https://images.unsplash.com/photo-1522075793577-0e6b86be585b?ixlib=rb-4.1.0&q=80&w=1080',
                 ),
               ),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: primaryColor,
-                width: 2.0,
-              ),
+              border: Border.all(color: primaryColor, width: 2.0),
             ),
           ),
           const SizedBox(width: 12.0),
-          // Lời chào
           Column(
-            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Welcome back!',
-                style: GoogleFonts.inter(
-                  color: secondaryText,
-                  letterSpacing: 0.0,
-                  fontSize: 12.0, // Ước tính từ 'bodySmall'
-                ),
-              ),
-              Text(
-                'Chef Maria',
-                style: GoogleFonts.interTight(
-                  color: primaryText, // Ước tính từ 'titleMedium'
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18.0,
-                  letterSpacing: 0.0,
-                ),
-              ),
+              Text('Welcome back!', style: GoogleFonts.inter(color: secondaryText, fontSize: 12.0)),
+              Text('Chef Maria', style: GoogleFonts.interTight(color: primaryText, fontWeight: FontWeight.w600, fontSize: 18.0)),
             ],
           ),
         ],
       ),
       actions: [
-        // Nút Menu
         Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             decoration: BoxDecoration(
               color: secondaryBackground,
               borderRadius: BorderRadius.circular(12.0),
             ),
             child: IconButton(
-              icon: Icon(
-                Icons.menu,
-                color: primaryText,
-                size: 24.0,
-              ),
-              onPressed: () {
-                // Mở Drawer
-                _scaffoldKey.currentState?.openEndDrawer();
-              },
+              icon: Icon(Icons.menu, color: primaryText, size: 24.0),
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
             ),
           ),
         ),
@@ -175,7 +181,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Hàm xây dựng Bottom Navigation Bar
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
@@ -184,72 +189,46 @@ class _HomePageState extends State<HomePage> {
       selectedItemColor: primaryColor,
       unselectedItemColor: secondaryText,
       onTap: (int index) {
-        // Xử lý điều hướng
-        if (index == _selectedIndex) return; // Không làm gì nếu nhấn tab hiện tại
-
-        setState(() {
-          _selectedIndex = index;
-        });
-
-        // Xử lý điều hướng
+        if (index == _selectedIndex) return;
+        setState(() => _selectedIndex = index);
         switch (index) {
-          case 0:
-            // Home: Đã ở đây
-            break;
           case 1:
-            // My Recipe
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const MyRecipeScreen()));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const MyRecipeScreen()));
             break;
           case 2:
-            // Plus (Add)
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const AddRecipeScreen()));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddRecipeScreen()));
             break;
-            case 3:
-            // Plus (Add)
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const PantryScreen()));
+          case 3:
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const PantryScreen()));
             break;
           case 4:
-            // Setting
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
             break;
         }
       },
-      items: const <BottomNavigationBarItem>[
+      items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.book), label: 'My Recipe'),
-        // SỬA ĐỔI: Icon bự hơn và xóa chữ
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle_outline, size: 36.0), // 1. Icon bự ra
-          label: '', // 2. Xóa chữ 'Plus'
-        ),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today), label: 'Pantry'),
+        BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline, size: 36.0), label: ''),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Pantry'),
         BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
       ],
     );
   }
 
-  // Hàm xây dựng Body
   Widget _buildBody() {
     return SafeArea(
-      top: true,
       child: SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.max,
           children: [
-            // SỬA ĐỔI: Banner Carousel
             _buildBanner(),
-            // Thanh tìm kiếm
             _buildSearchBar(),
-            // Hàng các nút chức năng
+            
+            // --- TODO 3: UI DANH MỤC MỚI ---
+            _buildCategoryList(),
+
             _buildActionButtons(),
-            // Danh sách công thức
             _buildRecipeList(),
-            // Thêm khoảng đệm dưới cùng để không bị che bởi FAB
             const SizedBox(height: 100),
           ],
         ),
@@ -257,60 +236,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // SỬA ĐỔI: Widget con cho Banner (Carousel)
+  // --- BANNER CAROUSEL ---
   Widget _buildBanner() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Container(
-        width: double.infinity,
-        height: 300.0, // Chiều cao "bự"
+        height: 300.0,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20.0),
-          color: Colors
-              .black, // Màu nền đen nếu ảnh dùng BoxFit.contain
+          color: Colors.black,
         ),
-        // Dùng ClipRRect để bo góc các ảnh con bên trong
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20.0),
           child: Stack(
             children: [
-              // PageView để trượt
               PageView.builder(
                 controller: _pageController,
                 itemCount: _carouselItems.length,
                 itemBuilder: (context, index) {
-                  final item = _carouselItems[index];
-                  return _buildCarouselItem(
-                    imagePath: item['image']!,
+                  return Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        fit: BoxFit.contain,
+                        image: AssetImage(_carouselItems[index]['image']!),
+                      ),
+                    ),
                   );
                 },
               ),
-
-              // Nút mũi tên Trái
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  onPressed: () {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
+                  onPressed: () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
                 ),
               ),
-
-              // Nút mũi tên Phải
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
                   icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                  onPressed: () {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
+                  onPressed: () => _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
                 ),
               ),
             ],
@@ -320,254 +285,191 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // SỬA ĐỔI: Hàm trợ giúp: Xây dựng 1 slide (Chỉ ảnh)
-  Widget _buildCarouselItem({required String imagePath}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        image: DecorationImage(
-          fit: BoxFit.contain, // Hiển thị toàn bộ ảnh
-          image: AssetImage(imagePath),
-        ),
-      ),
-    );
-  }
-
-  // Widget con cho thanh tìm kiếm
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 0.0), // Giảm padding top
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: TextFormField(
         controller: _searchController,
         focusNode: _searchFocusNode,
-        obscureText: false,
+        // --- TODO 2: LOGIC SEARCH REAL-TIME ---
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value; // Cập nhật từ khóa tìm kiếm
+          });
+        },
         decoration: InputDecoration(
           hintText: 'Search recipes, ingredients...',
-          hintStyle: GoogleFonts.inter(
-            color: secondaryText,
-            letterSpacing: 0.0,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: alternateBorder,
-              width: 1.0,
-            ),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: primaryColor, // Thay đổi màu khi focus
-              width: 1.0,
-            ),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: errorColor,
-              width: 1.0,
-            ),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: errorColor,
-              width: 1.0,
-            ),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
+          hintStyle: GoogleFonts.inter(color: secondaryText),
+          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: alternateBorder), borderRadius: BorderRadius.circular(25.0)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryColor), borderRadius: BorderRadius.circular(25.0)),
           filled: true,
           fillColor: secondaryBackground,
-          contentPadding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 0.0),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: secondaryText,
-            size: 24.0,
-          ),
+          prefixIcon: Icon(Icons.search_rounded, color: secondaryText),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20.0),
         ),
-        style: GoogleFonts.inter(
-          color: primaryText,
-          letterSpacing: 0.0,
+        style: GoogleFonts.inter(color: primaryText),
+      ),
+    );
+  }
+
+  // --- TODO 3: WIDGET DANH MỤC (MỚI THÊM) ---
+  Widget _buildCategoryList() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20.0, 16.0, 0.0, 0.0),
+      child: SizedBox(
+        height: 40,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _categories.length,
+          separatorBuilder: (ctx, index) => const SizedBox(width: 8),
+          itemBuilder: (ctx, index) {
+            final category = _categories[index];
+            final isSelected = _selectedCategory == category;
+            return ChoiceChip(
+              label: Text(category),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedCategory = category;
+                });
+              },
+              labelStyle: GoogleFonts.inter(
+                color: isSelected ? Colors.white : primaryText,
+                fontWeight: FontWeight.w500,
+              ),
+              backgroundColor: secondaryBackground,
+              selectedColor: primaryColor,
+              side: BorderSide(color: isSelected ? primaryColor : alternateBorder),
+            );
+          },
         ),
       ),
     );
   }
 
-  // Widget con cho hàng nút bấm
   Widget _buildActionButtons() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 0.0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            _buildActionButton(
-              icon: Icons.filter_list,
-              iconColor: primaryText,
-              bgColor: secondaryBackground,
-              borderColor: alternateBorder,
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const FilterScreen()));
-              },
-            ),
-            const SizedBox(width: 12.0),
-            _buildActionButton(
-              icon: Icons.mic,
-              iconColor: orangeAccent,
-              bgColor: Colors.white,
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const VoiceSearchScreen()));
-              },
-              hasElevation: true,
-            ),       
-            // Hết nút mới    
-            const SizedBox(width: 12.0),
-            _buildActionButton(
-              icon: Icons.bookmark_border,
-              iconColor: primaryText,
-              bgColor: secondaryBackground,
-              borderColor: primaryText,
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const MarkdownRecipeScreen()));
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Hàm trợ giúp để tạo nút bấm ICON
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    Color? borderColor,
-    bool hasElevation = false,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      width: 80.0,
-      height: 80.0,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20.0), // Thống nhất 20.0
-        border: borderColor != null
-            ? Border.all(color: borderColor, width: 1.0)
-            : null,
-        boxShadow: hasElevation
-            ? [
-                BoxShadow(
-                  blurRadius: 4.0,
-                  color: shadowColor,
-                  offset: const Offset(0.0, 2.0),
-                )
-              ]
-            : [],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20.0),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 30.0, // Thống nhất size
+      child: Row(
+        children: [
+          _buildActionButton(
+            icon: Icons.filter_list, iconColor: primaryText, bgColor: secondaryBackground, borderColor: alternateBorder,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FilterScreen())),
           ),
-        ),
-      ),
-    );
-  }
-
-  // SỬA ĐỔI: THÊM HÀM MỚI (để tạo nút bấm ASSET)
-  Widget _buildAssetButton({
-    required String assetPath,
-    required Color bgColor,
-    Color? borderColor,
-    bool hasElevation = false,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      width: 80.0,
-      height: 80.0,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20.0),
-        border: borderColor != null
-            ? Border.all(color: borderColor, width: 1.0)
-            : null,
-        boxShadow: hasElevation
-            ? [
-                BoxShadow(
-                  blurRadius: 4.0,
-                  color: shadowColor,
-                  offset: const Offset(0.0, 2.0),
-                )
-              ]
-            : [],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20.0),
-          child: Center(
-            child: Image.asset(
-              assetPath,
-              width: 30.0, // Đặt kích thước cho ảnh
-              height: 30.0,
-            ),
+          const SizedBox(width: 12.0),
+          _buildActionButton(
+            icon: Icons.mic, iconColor: orangeAccent, bgColor: Colors.white, hasElevation: true,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceSearchScreen())),
           ),
-        ),
+          const SizedBox(width: 12.0),
+          _buildActionButton(
+            icon: Icons.bookmark_border, iconColor: primaryText, bgColor: secondaryBackground, borderColor: primaryText,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MarkdownRecipeScreen())),
+          ),
+        ],
       ),
     );
   }
 
-  // Widget con cho danh sách công thức
+  Widget _buildActionButton({required IconData icon, required Color iconColor, required Color bgColor, Color? borderColor, bool hasElevation = false, required VoidCallback onTap}) {
+    return Container(
+      width: 80.0, height: 80.0,
+      decoration: BoxDecoration(
+        color: bgColor, borderRadius: BorderRadius.circular(20.0),
+        border: borderColor != null ? Border.all(color: borderColor) : null,
+        boxShadow: hasElevation ? [BoxShadow(blurRadius: 4.0, color: shadowColor, offset: const Offset(0.0, 2.0))] : [],
+      ),
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(20.0), child: Icon(icon, color: iconColor, size: 30.0)),
+    );
+  }
+
   Widget _buildRecipeList() {
+    // --- TODO 2: LOGIC LỌC DANH SÁCH ---
+    // Lọc theo Search text và Category
+    final filteredRecipes = _allRecipes.where((recipe) {
+      final matchSearch = recipe['title'].toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchCategory = _selectedCategory == "All" || recipe['category'] == _selectedCategory;
+      return matchSearch && matchCategory;
+    }).toList();
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(0, 20.0, 0, 0),
-      shrinkWrap: true, // Không tốt cho hiệu năng, nhưng giống code gốc
-      physics:
-          const NeverScrollableScrollPhysics(), // Vì đã ở trong SingleChildScrollView
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       children: [
-        // SỬA ĐỔI: Bọc card trong InkWell
-        InkWell(
-          onTap: () {
-            // SỬA LỖI FLOW: Mở RecipeDetailScreen
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const RecipeDetailScreen()));
-          },
-          child: _buildRecipeCard(
-            imageUrl:
-                'https://images.unsplash.com/photo-1581007871115-f14bc016e0a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080',
-            title: 'Creamy Garlic Pasta',
-            description: 'A delicious creamy pasta with garlic sauce.',
-            time: '25 min',
-            servings: '4 servings',
-            isFavorite: false,
+        // --- MÓN ĂN GỢI Ý TỪ AI ---
+        if (widget.suggestedMeals != null && widget.suggestedMeals!.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            child: Row(children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFFFF6B35), size: 20),
+              const SizedBox(width: 8),
+              Text("AI Suggested For You", style: GoogleFonts.interTight(fontSize: 20.0, fontWeight: FontWeight.bold, color: primaryText)),
+            ]),
           ),
-        ),
-        const SizedBox(height: 16.0),
-        // SỬA ĐỔI: Bọc card trong InkWell
+          ...widget.suggestedMeals!.map((mealName) => Column(
+            children: [
+              InkWell(
+                onTap: () {
+                  // --- TODO: GỌI GEMINI API ĐỂ TẠO CÔNG THỨC CHO MÓN NÀY ---
+                  // callGeminiApi(mealName);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const RecipeDetailScreen()));
+                },
+                child: _buildRecipeCard(
+                  id: "ai_generated", // ID giả
+                  imageUrl: 'https://source.unsplash.com/random/?food,meal',
+                  title: mealName,
+                  description: 'Recommended based on your goals',
+                  time: '30 min',
+                  servings: '1',
+                  isFavorite: false,
+                ),
+              ),
+              const SizedBox(height: 16.0),
+            ],
+          )).toList(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            child: Text("Popular Recipes", style: GoogleFonts.interTight(fontSize: 20.0, fontWeight: FontWeight.bold, color: primaryText)),
+          ),
+        ],
+
+        // --- DANH SÁCH MÓN ĂN TỪ DATABASE ---
+        // Nếu không tìm thấy món nào
+        if (filteredRecipes.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Center(child: Text("No recipes found.", style: GoogleFonts.inter(color: secondaryText))),
+          ),
+
+        // Render danh sách đã lọc
+        ...filteredRecipes.map((recipe) => Column(
+          children: [
+            InkWell(
+              onTap: () {
+                // --- TODO: TRUYỀN ID HOẶC OBJECT SANG TRANG CHI TIẾT ---
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => RecipeDetailScreen(recipeId: recipe['id'])));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RecipeDetailScreen()));
+              },
+              child: _buildRecipeCard(
+                id: recipe['id'],
+                imageUrl: recipe['image'],
+                title: recipe['title'],
+                description: recipe['description'],
+                time: recipe['time'],
+                servings: recipe['servings'],
+                isFavorite: recipe['isFavorite'],
+              ),
+            ),
+            const SizedBox(height: 16.0),
+          ],
+        )).toList(),
       ],
     );
   }
 
-  // Hàm trợ giúp để tạo thẻ công thức
   Widget _buildRecipeCard({
+    required String id,
     required String imageUrl,
     required String title,
     required String description,
@@ -578,90 +480,57 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
-        width: double.infinity,
         decoration: BoxDecoration(
           color: secondaryBackground,
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 8.0,
-              color: shadowColor,
-              offset: const Offset(0.0, 2.0),
-            )
-          ],
+          boxShadow: [BoxShadow(blurRadius: 8.0, color: shadowColor, offset: const Offset(0.0, 2.0))],
           borderRadius: BorderRadius.circular(15.0),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
                 child: Image.network(
                   imageUrl,
-                  width: double.infinity,
-                  height: 180.0,
-                  fit: BoxFit.cover,
+                  width: double.infinity, height: 180.0, fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    width: double.infinity,
-                    height: 180.0,
-                    color: alternateBorder,
-                    child: Icon(Icons.broken_image, color: secondaryText),
+                    width: double.infinity, height: 180.0, color: alternateBorder,
+                    child: Icon(Icons.fastfood, color: secondaryText, size: 50),
                   ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
-                child: Text(
-                  title,
-                  style: GoogleFonts.interTight(
-                    color: primaryText,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18.0,
-                  ),
-                ),
+                child: Text(title, style: GoogleFonts.interTight(color: primaryText, fontWeight: FontWeight.w600, fontSize: 18.0)),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  description,
-                  style: GoogleFonts.inter(
-                    color: secondaryText,
-                    fontSize: 12.0,
-                  ),
-                ),
+                child: Text(description, style: GoogleFonts.inter(color: secondaryText, fontSize: 12.0)),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
                 child: Row(
-                  mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
-                      mainAxisSize: MainAxisSize.max,
                       children: [
                         _buildInfoChip(Icons.schedule, time, orangeAccent),
                         const SizedBox(width: 12.0),
-                        _buildInfoChip(Icons.people, servings, successColor),
+                        _buildInfoChip(Icons.people, "$servings servings", successColor),
                       ],
                     ),
                     Container(
-                      width: 35.0,
-                      height: 35.0,
-                      decoration: BoxDecoration(
-                        color: lightRedFill,
-                        shape: BoxShape.circle,
-                      ),
+                      width: 35.0, height: 35.0,
+                      decoration: BoxDecoration(color: lightRedFill, shape: BoxShape.circle),
                       child: IconButton(
-                        icon: Icon(
-                          isFavorite ? Icons.bookmark : Icons.bookmark_border,
-                          color: errorColor,
-                          size: 18.0,
-                        ),
+                        icon: Icon(isFavorite ? Icons.bookmark : Icons.bookmark_border, color: errorColor, size: 18.0),
                         onPressed: () {
-                          print('Markdown button pressed for $title');
-                          // TODO: Xử lý logic 
+                          // --- TODO 4: XỬ LÝ LOGIC YÊU THÍCH ---
+                          // 1. Cập nhật state cục bộ: setState(() { recipe['isFavorite'] = !recipe['isFavorite']; });
+                          // 2. Gọi API cập nhật Backend
+                          print('Favorite toggled for $id');
                         },
                       ),
                     ),
@@ -675,178 +544,76 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Hàm trợ giúp cho chip thông tin (thời gian, khẩu phần)
   Widget _buildInfoChip(IconData icon, String text, Color iconColor) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: iconColor,
-          size: 16.0,
-        ),
+        Icon(icon, color: iconColor, size: 16.0),
         const SizedBox(width: 8.0),
-        Text(
-          text,
-          style: GoogleFonts.inter(
-            color: secondaryText,
-            fontSize: 12.0,
-          ),
-        ),
+        Text(text, style: GoogleFonts.inter(color: secondaryText, fontSize: 12.0)),
       ],
     );
   }
 
-  // SỬA ĐỔI: Thêm hàm xây dựng Drawer (Đã gộp)
   Widget _buildAppDrawer() {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            accountName: Text(
-              'Chef Maria',
-              style: GoogleFonts.interTight(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            accountEmail: Text(
-              'maria.chef@example.com',
-              style: GoogleFonts.inter(
-                color: Colors.white.withOpacity(0.8),
-              ),
-            ),
+            accountName: Text('Chef Maria', style: GoogleFonts.interTight(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            accountEmail: Text('maria.chef@example.com', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8))),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: const NetworkImage(
-                'https://images.unsplash.com/photo-1522075793577-0e6b86be585b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080',
-              ),
+              backgroundImage: const NetworkImage('https://images.unsplash.com/photo-1522075793577-0e6b86be585b?ixlib=rb-4.1.0&q=80&w=1080'),
               backgroundColor: Colors.white,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: primaryColor,
-                    width: 2.0,
-                  ),
-                ),
-              ),
             ),
-            decoration: BoxDecoration(
-              color: primaryColor,
-            ),
-          ),
-          // --- THÊM 4 MỤC MỚI VÀO ĐÂY ---
-          ListTile(
-            leading:
-                Icon(Icons.add_circle_outline, color: secondaryText),
-            title: Text('Add Recipe',
-                style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddRecipeScreen()),
-              );
-            },
+            decoration: BoxDecoration(color: primaryColor),
           ),
           ListTile(
-            leading:
-                Icon(Icons.qr_code_scanner, color: secondaryText),
-            title: Text('Scanner Barcode',
-                style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const QrScannerScreen()),
-              );
-            },
+            leading: Icon(Icons.add_circle_outline, color: secondaryText),
+            title: Text('Add Recipe', style: GoogleFonts.inter(color: primaryText)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddRecipeScreen())),
           ),
           ListTile(
-            leading:
-                Icon(Icons.camera_alt_outlined, color: secondaryText),
-            title: Text('Scan Ingredient',
-                style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const IngredientScannerScreen()),
-              );
-            },
+            leading: Icon(Icons.qr_code_scanner, color: secondaryText),
+            title: Text('Scanner Barcode', style: GoogleFonts.inter(color: primaryText)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QrScannerScreen())),
           ),
           ListTile(
+            leading: Icon(Icons.camera_alt_outlined, color: secondaryText),
+            title: Text('Scan Ingredient', style: GoogleFonts.inter(color: primaryText)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const IngredientScannerScreen())),
+          ),
+           ListTile(
             leading: Icon(Icons.bookmark_border, color: secondaryText),
-            title: Text('Bookmark',
-                style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MarkdownRecipeScreen()),
-              );
-            },
+            title: Text('Bookmark', style: GoogleFonts.inter(color: primaryText)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MarkdownRecipeScreen())),
           ),
-          const Divider(), // Dòng kẻ phân cách
-          // --- HẾT PHẦN THÊM MỚI ---
+          const Divider(),
           ListTile(
             leading: Icon(Icons.settings_outlined, color: secondaryText),
             title: Text('Settings', style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
           ),
           ListTile(
             leading: Icon(Icons.info_outline, color: secondaryText),
             title: Text('About Us', style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AboutUsScreen()),
-              );
-            },
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsScreen())),
           ),
-           ListTile(
-            leading: Icon(Icons.info_outline, color: secondaryText),
-            title: Text('Nofication', style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-              );
-            },
+          ListTile(
+            leading: Icon(Icons.notifications_outlined, color: secondaryText),
+            title: Text('Notification', style: GoogleFonts.inter(color: primaryText)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen())),
           ),
-          ListTile( 
+          ListTile(
             leading: Icon(Icons.contact_mail_outlined, color: secondaryText),
             title: Text('Contact Us', style: GoogleFonts.inter(color: primaryText)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ContactUsScreen()),
-              );
-            },
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsScreen())),
           ),
           const Divider(),
           ListTile(
             leading: Icon(Icons.logout_outlined, color: errorColor),
             title: Text('Logout', style: GoogleFonts.inter(color: errorColor)),
-            onTap: () {
-              Navigator.pop(context); // Đóng drawer
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const LoginScreen(),
-                ),
-                (route) => false,
-              );
-            },
+            onTap: () => Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false),
           ),
         ],
       ),

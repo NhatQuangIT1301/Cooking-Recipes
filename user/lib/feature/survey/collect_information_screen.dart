@@ -74,7 +74,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   Map<String, double> _analysisData = {};
   List<String> _deficiencies = [];
   List<String> _recommendations = [];
-  List<String> _mealSuggestions = [];
+  List<String> _mealSuggestions = []; // Vẫn giữ biến này để lưu dữ liệu
 
   @override
   void initState() {
@@ -150,8 +150,16 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   void _submitProfile() {
+    // --- QUAN TRỌNG: TRUYỀN DỮ LIỆU SANG HOMEPAGE ---
+    // Bạn cần cập nhật constructor của HomePage để nhận list này.
+    // Ví dụ: HomePage({super.key, required this.suggestedMeals});
+    
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomePage()),
+      MaterialPageRoute(
+        builder: (context) => const HomePage(
+          // suggestedMeals: _mealSuggestions, // <--- Bỏ comment dòng này khi bạn đã sửa HomePage
+        ),
+      ),
       (route) => false,
     );
   }
@@ -190,6 +198,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 
     String goal = _formData['goal'] ?? 'Maintain Weight';
     
+    // Logic giả lập AI để tạo list món ăn (Vẫn giữ để có dữ liệu truyền đi)
     if (_formData['weight'] > _formData['target_weight'] && goal == 'Lose Weight') {
        _analysisData = {'Protein': 45, 'Carbs': 35, 'Fat': 20};
        _deficiencies = ['Vitamin D', 'Chất xơ (Fiber)'];
@@ -231,8 +240,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           _buildPage_Intro(),           // 0
           _buildPage_Gender(),          // 1
           _buildPage_Age(),             // 2
-          _buildPage_BodyStats(),       // 3 (Đã sửa màu sáng)
-          _buildPage_TargetWeight(),    // 4 (Đã sửa màu sáng)
+          _buildPage_BodyStats(),       // 3
+          _buildPage_TargetWeight(),    // 4
           _buildPage_HealthAndHabits(), // 5
           _buildPage_Goal(),            // 6
           _buildPage_AiAnalysis(),      // 7
@@ -244,7 +253,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    // Đã xóa logic đổi màu nền tối, dùng nền sáng cho tất cả
     return AppBar(
       backgroundColor: kColorBackground,
       elevation: 0,
@@ -276,7 +284,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     bool isAnalyzing = _currentPage == 7 && _isAnalyzing;
     
     return Container(
-      color: kColorCard, // Dùng màu nền sáng (trắng)
+      color: kColorCard,
       padding: EdgeInsets.fromLTRB(24.0, 16.0, 24.0, MediaQuery.of(context).padding.bottom + 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -301,7 +309,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             onPressed: isAnalyzing ? null : _onNextPressed,
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(120, 50),
-              backgroundColor: kColorPrimary, // Luôn dùng màu xanh chủ đạo
+              backgroundColor: kColorPrimary,
               foregroundColor: kColorInfo,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
             ),
@@ -316,7 +324,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   // --- CÁC TRANG CON (PAGE VIEW) ---
-
+  
   // 0. Intro
   Widget _buildPage_Intro() {
     return Padding(
@@ -383,7 +391,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               hint: 'e.g., 25',
               icon: Icons.cake_outlined,
               keyboardType: TextInputType.number,
-              // CẬP NHẬT VALIDATOR CHO TUỔI: 0 < Tuổi < 100
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Please enter your age';
                 final n = int.tryParse(value);
@@ -399,9 +406,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
-  // 3. Body Stats (GIAO DIỆN SÁNG)
+  // 3. Body Stats
   Widget _buildPage_BodyStats() {
-    return SingleChildScrollView( // Bọc trong SingleScrollView để tránh lỗi tràn màn hình
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,11 +416,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           _buildHeader(
             "Body Measurements",
             "Enter your height and weight to calculate BMI.",
-            isDark: false, // Đổi thành False
+            isDark: false,
           ),
           const SizedBox(height: 32.0),
-
-          // --- SLIDER CHIỀU CAO ---
           _buildNumberSlider(
             currentValue: _formData['height'],
             minValue: 100,
@@ -424,12 +429,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               _calculateBmi();
             },
           ),
-
           const SizedBox(height: 24.0),
           const Divider(color: kColorBorder, height: 1),
           const SizedBox(height: 24.0),
-
-          // --- SLIDER CÂN NẶNG ---
           _buildNumberSlider(
             currentValue: _formData['weight'],
             minValue: 30,
@@ -440,16 +442,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               _calculateBmi();
             },
           ),
-
           const SizedBox(height: 32.0),
-
-          // BMI Result (Màu sáng)
           if (_bmiResult.isNotEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                  color: kColorCard, // Nền trắng
+                  color: kColorCard,
                   borderRadius: BorderRadius.circular(12.0),
                   border: Border.all(color: kColorPrimary, width: 1.0)),
               child: Column(
@@ -468,7 +467,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
-  // 4. Target Weight (GIAO DIỆN SÁNG)
+  // 4. Target Weight
   Widget _buildPage_TargetWeight() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -478,11 +477,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           _buildHeader(
             "What's your target weight?",
             "This helps us recommend the right meal plans for your goals.",
-            isDark: false, // Đổi thành False
+            isDark: false,
           ),
           const SizedBox(height: 40.0),
-          
-           // --- SLIDER MỤC TIÊU ---
           _buildNumberSlider(
             currentValue: _formData['target_weight'],
             minValue: 30,
@@ -611,14 +608,13 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   // --- UI HELPERS ---
 
   Widget _buildHeader(String title, String subtitle, {bool isDark = false}) {
-    // Vì đã chuyển sang giao diện sáng toàn bộ, ta có thể bỏ qua check isDark
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: GoogleFonts.interTight(
-            color: kColorPrimaryText, // Luôn dùng màu đen
+            color: kColorPrimaryText,
             fontSize: 28.0,
             fontWeight: FontWeight.w600,
           ),
@@ -627,7 +623,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         Text(
           subtitle,
           style: GoogleFonts.inter(
-            color: kColorSecondaryText, // Luôn dùng màu xám
+            color: kColorSecondaryText,
             fontSize: 16.0,
             height: 1.5,
           ),
@@ -636,7 +632,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
   }
 
-  // --- SLIDER ĐÃ SỬA MÀU SÁNG ---
   Widget _buildNumberSlider({
     required double currentValue,
     required double minValue,
@@ -646,26 +641,23 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }) {
     return Column(
       children: [
-        // Hiển thị số (Màu chính hoặc Đen)
         Text(
           '${currentValue.toStringAsFixed(1)} $unit',
           style: GoogleFonts.interTight(
-            color: kColorPrimary, // Dùng màu xanh chủ đạo cho số
+            color: kColorPrimary,
             fontSize: 44.0,
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 24.0),
         
-        // Thanh trượt Slider
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: kColorPrimary, // Màu thanh đã trượt (Xanh)
-            inactiveTrackColor: kColorBorder, // Màu thanh chưa trượt (Xám nhạt)
-            thumbColor: kColorCard, // Màu nút tròn kéo (Trắng)
+            activeTrackColor: kColorPrimary,
+            inactiveTrackColor: kColorBorder,
+            thumbColor: kColorCard,
             overlayColor: kColorPrimary.withOpacity(0.2),
             trackHeight: 6.0,
-            // Viền xanh cho nút kéo để nổi bật trên nền trắng
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0, elevation: 4),
           ),
           child: Slider(
@@ -678,7 +670,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           ),
         ),
         
-        // Hiển thị min - max (Màu xám)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Row(
@@ -709,7 +700,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     required String hint,
     IconData? icon,
     TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator, // Thêm tham số validator tùy chỉnh
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -730,7 +721,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: kColorPrimary, width: 2.0),
         ),
-        errorBorder: OutlineInputBorder( // Thêm viền đỏ khi lỗi
+        errorBorder: OutlineInputBorder(
            borderRadius: BorderRadius.circular(12.0),
            borderSide: const BorderSide(color: kColorError, width: 1.0),
         ),
@@ -739,7 +730,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
            borderSide: const BorderSide(color: kColorError, width: 2.0),
         ),
       ),
-      // Dùng validator được truyền vào, nếu không có thì dùng mặc định
       validator: validator ?? (value) => (value == null || value.isEmpty) ? 'Please enter this field' : null,
     );
   }
@@ -835,7 +825,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   }
 
   // --- AI REPORTS UI ---
-
+  // ĐÃ CHỈNH SỬA: XÓA PHẦN "SUGGESTED MEALS"
   Widget _buildAnalysisReport() {
     return SingleChildScrollView(
       child: Column(
@@ -864,17 +854,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 32.0),
-          _buildSectionTitle('Suggested Meals'),
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: kColorCard,
-              borderRadius: BorderRadius.circular(12.0),
-              border: Border.all(color: kColorBorder)
-            ),
-            child: _buildAnalysisItem(Icons.restaurant_menu, 'Món ăn gợi ý:', _mealSuggestions, kColorSecondaryText),
-          ),
+          // --- Đã xóa phần Suggested Meals ở đây ---
         ],
       ),
     );
