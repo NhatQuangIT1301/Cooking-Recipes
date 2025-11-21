@@ -76,12 +76,28 @@ class _HomePageState extends State<HomePage> {
   String _selectedCategory = "All";
   final List<String> _categories = ["All", "Breakfast", "Lunch", "Dinner", "Dessert"];
 
-  final List<Map<String, String>> _carouselItems = [
-    {"image": "assets/images/bunbo.jpg", "title": "Bún Bò Huế"},
-    {"image": "assets/images/bundau.jpg", "title": "Bún Đậu Mắm Tôm"},
-    {"image": "assets/images/goicuon.jpg", "title": "Gỏi Cuốn"},
-    {"image": "assets/images/nemnuong.jpg", "title": "Nem Nướng"},
-    {"image": "assets/images/pho.jpg", "title": "Phở Bò"},
+  final List<Map<String, String>> _dailyRecommendations = [
+    {
+      "image": "assets/images/bunbo.jpg", 
+      "title": "Bún Bò Huế Đậm Đà",
+      "calories": "520 Kcal",
+      "time": "45 min",
+      "level": "Medium"
+    },
+    {
+      "image": "assets/images/goicuon.jpg",
+      "title": "Gỏi Cuốn Tôm Thịt",
+      "calories": "180 Kcal",
+      "time": "20 min",
+      "level": "Easy"
+    },
+    {
+      "image": "assets/images/pho.jpg",
+      "title": "Phở Bò Gia Truyền",
+      "calories": "450 Kcal",
+      "time": "60 min",
+      "level": "Hard"
+    },
   ];
 
   // Colors
@@ -236,50 +252,120 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- BANNER CAROUSEL ---
+  // --- THAY THẾ HÀM _buildBanner CŨ BẰNG HÀM NÀY ---
   Widget _buildBanner() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Container(
-        height: 300.0,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20.0),
-          color: Colors.black,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tiêu đề mục đề xuất
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 12.0),
+          child: Text(
+            "Cook Something New Today",
+            style: GoogleFonts.interTight(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+              color: primaryText,
+            ),
+          ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20.0),
-          child: Stack(
-            children: [
-              PageView.builder(
-                controller: _pageController,
-                itemCount: _carouselItems.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        fit: BoxFit.contain,
-                        image: AssetImage(_carouselItems[index]['image']!),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  onPressed: () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                  onPressed: () => _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
-                ),
-              ),
+        
+        // Khung slide đề xuất
+        SizedBox(
+          height: 260.0, // Tăng chiều cao để chứa thông tin
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _dailyRecommendations.length,
+            itemBuilder: (context, index) {
+              final item = _dailyRecommendations[index];
+              return _buildRecommendationCard(item);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget con hiển thị từng thẻ trong khung đề xuất
+  Widget _buildRecommendationCard(Map<String, String> item) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        image: DecorationImage(
+          fit: BoxFit.cover,
+          image: AssetImage(item['image']!), // Hoặc NetworkImage nếu dùng link
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.0),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.8),
             ],
           ),
+        ),
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Badge đề xuất
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: orangeAccent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "Recommend",
+                style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Spacer(),
+            
+            // Tên món ăn
+            Text(
+              item['title']!,
+              style: GoogleFonts.interTight(
+                color: Colors.white,
+                fontSize: 22.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Thông tin chi tiết (Time | Calo | Level)
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined, color: Colors.white70, size: 16),
+                const SizedBox(width: 4),
+                Text(item['time']!, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                
+                const SizedBox(width: 16),
+                const Icon(Icons.local_fire_department_outlined, color: Colors.white70, size: 16),
+                const SizedBox(width: 4),
+                Text(item['calories']!, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                
+                const SizedBox(width: 16),
+                const Icon(Icons.bar_chart, color: Colors.white70, size: 16),
+                const SizedBox(width: 4),
+                Text(item['level']!, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+              ],
+            ),
+          ],
         ),
       ),
     );
