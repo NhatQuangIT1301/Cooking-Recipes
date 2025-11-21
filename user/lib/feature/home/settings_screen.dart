@@ -184,32 +184,6 @@ class SettingsScreen extends StatelessWidget {
               _buildDivider(),
               _buildSettingsItem(
                 context,
-                icon: Icons.qr_code_scanner,
-                title: "Scanner Barcode",
-                showArrow: true,
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const QrScannerScreen()));
-                },
-              ),
-              _buildDivider(),
-              _buildSettingsItem(
-                context,
-                icon: Icons.camera_alt_outlined,
-                title: "Scan Ingredient",
-                showArrow: true,
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const IngredientScannerScreen()));
-                },
-              ),
-              _buildDivider(),
-              _buildSettingsItem(
-                context,
                 icon: Icons.bookmark_border,
                 title: "Bookmark",
                 showArrow: true,

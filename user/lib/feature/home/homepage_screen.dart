@@ -440,31 +440,6 @@ class _HomePageState extends State<HomePage> {
                         builder: (context) => const MarkdownRecipeScreen()));
               },
             ),
-            const SizedBox(width: 12.0),
-            _buildActionButton(
-              icon: Icons.add,
-              iconColor: primaryText,
-              bgColor: secondaryBackground,
-              borderColor: successColor, // Giả định 'secondary' là success
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AddRecipeScreen()));
-              },
-            ),
-            const SizedBox(width: 12.0),
-            _buildActionButton(
-              icon: Icons.settings_sharp,
-              iconColor: primaryText,
-              bgColor: secondaryBackground,
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const SettingsScreen()));
-              },
-            ),
           ],
         ),
       ),
