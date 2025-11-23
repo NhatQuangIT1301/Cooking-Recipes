@@ -1,7 +1,5 @@
 import 'package:cooking_recipes_books/feature/recipe/add_recipe_screen.dart';
 import 'package:cooking_recipes_books/feature/recipe/markdown_recipe_screen.dart';
-import 'package:cooking_recipes_books/feature/recipe/qr_scanner_screen.dart';
-import 'package:cooking_recipes_books/feature/scan/ingredient_scanner_screen.dart';
 
 import '../auth/login_screen.dart';
 import '../home/aboutus_screen.dart';

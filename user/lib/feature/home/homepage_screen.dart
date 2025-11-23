@@ -15,7 +15,6 @@ import '../scan/qr_scanner_screen.dart';
 import '../auth/login_screen.dart';
 import 'pantry_screen.dart';
 import 'notifications_screen.dart';
-import '../recipe/blog_screen.dart';
 
 class HomePage extends StatefulWidget {
   final List<String>? suggestedMeals;
@@ -513,7 +512,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16.0),
             ],
-          )).toList(),
+          )),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
             child: Text("Popular Recipes", style: GoogleFonts.interTight(fontSize: 20.0, fontWeight: FontWeight.bold, color: primaryText)),
@@ -549,7 +548,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16.0),
           ],
-        )).toList(),
+        )),
       ],
     );
   }
@@ -648,8 +647,8 @@ class _HomePageState extends State<HomePage> {
           UserAccountsDrawerHeader(
             accountName: Text('Chef Maria', style: GoogleFonts.interTight(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
             accountEmail: Text('maria.chef@example.com', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8))),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: const NetworkImage('https://images.unsplash.com/photo-1522075793577-0e6b86be585b?ixlib=rb-4.1.0&q=80&w=1080'),
+            currentAccountPicture: const CircleAvatar(
+              backgroundImage: NetworkImage('https://images.unsplash.com/photo-1522075793577-0e6b86be585b?ixlib=rb-4.1.0&q=80&w=1080'),
               backgroundColor: Colors.white,
             ),
             decoration: BoxDecoration(color: primaryColor),
