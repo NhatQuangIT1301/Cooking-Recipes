@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'signup_screen.dart'; // Import trang Sign Up
 import 'forgot_password_screen.dart';
 import '../survey/collect_information_screen.dart';
+import '../services/auth_service.dart';
 // THÊM MỚI: Import trang Quên mật khẩu
 
 class LoginScreen extends StatefulWidget {
@@ -259,8 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: IconButton(
                           onPressed: () {
-                            // TODO: Xử lý logic đăng nhập Google
-                            print('Login with Google');
+                            final AuthService authService = AuthService();
                           },
                           icon: Image.network(
                             'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg', // Logo Google từ mạng
