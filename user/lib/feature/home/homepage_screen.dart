@@ -40,33 +40,75 @@ class _HomePageState extends State<HomePage> {
   final List<Map<String, dynamic>> _allRecipes = [
     {
       "id": "1",
-      "title": "Creamy Garlic Pasta",
-      "description": "A delicious creamy pasta with garlic sauce.",
-      "image": "https://images.unsplash.com/photo-1581007871115-f14bc016e0a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
-      "time": "25 min",
-      "servings": "4",
-      "isFavorite": false,
-      "category": "Dinner"
+      "title": "Phở Bò Tái Nạm",
+      "description": "Món phở truyền thống với nước dùng đậm đà, bò tái mềm ngọt.",
+      "image": "https://image.pollinations.ai/prompt/delicious%20Pho%20Bo%20Tai%20Nam%20vietnamese%20noodle%20soup%20restaurant%20quality",
+      "time": "45 min",
+      "servings": "2",
+      "isFavorite": true,
+      "category": "Breakfast",
+      "calories": 450,
+      "protein": 25.0
     },
     {
       "id": "2",
-      "title": "Berry Smoothie Bowl",
-      "description": "Healthy breakfast with fresh berries.",
-      "image": "https://images.unsplash.com/photo-1626078436812-7c7254ba0b48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
-      "time": "10 min",
+      "title": "Cơm Tấm Sườn Bì",
+      "description": "Cơm tấm Sài Gòn với sườn nướng mật ong và chả trứng.",
+      "image": "https://image.pollinations.ai/prompt/Com%20Tam%20Suon%20Bi%20Cha%20vietnamese%20broken%20rice%20grilled%20pork",
+      "time": "30 min",
       "servings": "1",
-      "isFavorite": true,
-      "category": "Breakfast"
+      "isFavorite": false,
+      "category": "Lunch",
+      "calories": 650,
+      "protein": 30.0
     },
     {
       "id": "3",
-      "title": "Grilled Chicken Salad",
-      "description": "Fresh salad with grilled chicken breast.",
-      "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NjI3MDI0OTZ8&ixlib=rb-4.1.0&q=80&w=1080",
+      "title": "Bánh Mì Chảo",
+      "description": "Bánh mì giòn tan ăn kèm pate, trứng ốp la và xíu mại.",
+      "image": "https://image.pollinations.ai/prompt/Banh%20Mi%20Chao%20vietnamese%20breakfast%20skillet%20bread",
+      "time": "15 min",
+      "servings": "1",
+      "isFavorite": true,
+      "category": "Breakfast",
+      "calories": 500,
+      "protein": 15.0
+    },
+    {
+      "id": "4",
+      "title": "Gỏi Cuốn Tôm Thịt",
+      "description": "Món khai vị thanh mát với tôm tươi, thịt ba chỉ và rau sống.",
+      "image": "https://image.pollinations.ai/prompt/Goi%20Cuon%20fresh%20spring%20rolls%20vietnamese%20shrimp%20pork",
       "time": "20 min",
-      "servings": "2",
+      "servings": "4",
       "isFavorite": false,
-      "category": "Lunch"
+      "category": "Snack",
+      "calories": 180,
+      "protein": 10.0
+    },
+    {
+      "id": "5",
+      "title": "Bún Chả Hà Nội",
+      "description": "Chả nướng than hoa thơm lừng ăn kèm bún và nước mắm chua ngọt.",
+      "image": "https://image.pollinations.ai/prompt/Bun%20Cha%20Hanoi%20grilled%20pork%20noodle%20soup",
+      "time": "60 min",
+      "servings": "4",
+      "isFavorite": true,
+      "category": "Lunch",
+      "calories": 580,
+      "protein": 28.0
+    },
+    {
+      "id": "6",
+      "title": "Canh Chua Cá Lóc",
+      "description": "Canh chua đậm chất miền Tây với cá lóc, bạc hà và bông điên điển.",
+      "image": "https://image.pollinations.ai/prompt/Canh%20Chua%20Ca%20Loc%20vietnamese%20sour%20fish%20soup",
+      "time": "35 min",
+      "servings": "3",
+      "isFavorite": false,
+      "category": "Dinner",
+      "calories": 250,
+      "protein": 20.0
     },
   ];
 
