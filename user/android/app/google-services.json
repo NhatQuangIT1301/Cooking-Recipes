@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "483232806732",
+    "project_id": "cookingrecipes-ec3ad",
+    "storage_bucket": "cookingrecipes-ec3ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483232806732:android:ddb1c4e87cb7c75c1b81e9",
+        "android_client_info": {
+          "package_name": "com.example.user"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "483232806732-jqbu7j3c8umgd12gjkod5ntvrooaaqs2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjsSNOeiYSsPVGyvHCFwNMlcAv0buAnl8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483232806732-jqbu7j3c8umgd12gjkod5ntvrooaaqs2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
