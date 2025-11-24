@@ -1,54 +1,50 @@
-import 'dart:convert';
+// services/auth_service.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
 class AuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  // Cấu hình địa chỉ backend
-  // Use `10.0.2.2` for Android emulator, or replace with device LAN IP when testing on a real device
-  final String _backendUrl = 'http://10.0.2.2:5000/api/user/google-login';
-
-  Future<bool> signInWithGoogle() async {
+  // Hàm xử lý đăng nhập Google
+  Future<UserCredential?> signInWithGoogle() async {
     try {
-      // 1. Mở cửa sổ đăng nhập
+      // 1. Kích hoạt luồng đăng nhập Google (mở popup chọn mail)
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
+      
       if (googleUser == null) {
-        return false;
+        return null; // Người dùng hủy đăng nhập
       }
-      print('Đã lấy được Google User: ${googleUser.email}');
 
-      // 2. Gửi thông tin về backend để lưu vào database
-      final response = await http.post(
-        Uri.parse(_backendUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'googleId': googleUser.id,
-          'email': googleUser.email,
-          'name': googleUser.displayName ?? 'Full Name',
-          'avatar': googleUser.photoUrl ?? '',
-        }),
+      // 2. Lấy thông tin xác thực (Token) từ request trên
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 3. Tạo credential để gửi cho Firebase
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
-      // 3. Kiểm tra phản hồi từ server
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        print('Server trả về: $responseData');
+      // 4. Đăng nhập vào Firebase
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      
+      // --- LƯU Ý QUAN TRỌNG CHO BACKEND NODE.JS ---
+      // Nếu bạn dùng Node.js, bạn cần lấy ID Token này gửi về server:
+      // String? idToken = await userCredential.user?.getIdToken();
+      // await sendTokenToNodeJsBackend(idToken);
+      // ---------------------------------------------
 
-        // TODO: Bạn có thể lưu _id hoặc token vào bộ nhớ máy ở đây (Shared Preferences)
-        return true;
-      } else {
-        print('Lỗi Server: ${response.body}');
-        return false;
-      }
-    } catch (error) {
-      print('Lỗi Đăng Nhập: $error');
-      return false;
+      return userCredential;
+    } catch (e) {
+      print("Lỗi đăng nhập Google: $e");
+      return null;
     }
   }
 
+  // Hàm đăng xuất
   Future<void> signOut() async {
     await _googleSignIn.signOut();
+    await _auth.signOut();
   }
 }
