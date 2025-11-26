@@ -1,19 +1,22 @@
-import 'dart:async'; // 1. Import thư viện Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'reset_password_screen.dart'; // Đừng quên import
 
 class OtpScreen extends StatefulWidget {
   final String email;
-  final String password;
-  final String fullName;
+  final String? password; 
+  final String? fullName;
+  final bool isForgotPassword; // 🔥 Đây là tham số bạn đang thiếu
 
   const OtpScreen({
     super.key,
     required this.email,
-    required this.password,
-    required this.fullName,
+    this.password,
+    this.fullName,
+    this.isForgotPassword = false, // Mặc định là false (Đăng ký)
   });
 
   @override
@@ -24,25 +27,24 @@ class _OtpScreenState extends State<OtpScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
   
-  // --- KHAI BÁO BIẾN CHO TIMER ---
+  // --- TIMER VARIABLES ---
   Timer? _timer;
-  int _start = 60; // Thời gian đếm ngược (giây)
-  bool _canResend = false; // Trạng thái nút gửi lại
+  int _start = 60;
+  bool _canResend = false;
 
   @override
   void initState() {
     super.initState();
-    startTimer(); // Bắt đầu đếm ngược ngay khi vào màn hình
+    startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Hủy timer khi thoát màn hình để tránh rò rỉ bộ nhớ
+    _timer?.cancel();
     _otpController.dispose();
     super.dispose();
   }
 
-  // --- HÀM ĐẾM NGƯỢC ---
   void startTimer() {
     setState(() {
       _start = 60;
@@ -56,7 +58,7 @@ class _OtpScreenState extends State<OtpScreen> {
         if (_start == 0) {
           setState(() {
             timer.cancel();
-            _canResend = true; // Cho phép bấm nút
+            _canResend = true;
           });
         } else {
           setState(() {
@@ -69,14 +71,19 @@ class _OtpScreenState extends State<OtpScreen> {
 
   // --- HÀM GỬI LẠI MÃ ---
   Future<void> _handleResendOtp() async {
-    // Hiện loading nhẹ hoặc thông báo
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Đang gửi lại mã...")),
     );
 
     final authService = AuthService();
-    // Gọi lại API gửi OTP (Chỉ cần email)
-    bool isSent = await authService.sendOtp(widget.email);
+    bool isSent;
+
+    // PHÂN LOẠI ĐỂ GỌI ĐÚNG API
+    if (widget.isForgotPassword) {
+      isSent = await authService.forgotPassword(widget.email);
+    } else {
+      isSent = await authService.sendOtp(widget.email); 
+    }
 
     if (isSent) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +92,6 @@ class _OtpScreenState extends State<OtpScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // Reset lại đồng hồ đếm ngược
       startTimer();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,11 +103,35 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  // --- HÀM XÁC THỰC (GIỮ NGUYÊN) ---
+  // --- HÀM XỬ LÝ XÁC NHẬN ---
   void _handleVerify() async {
-    if (_otpController.text.length < 6) {
+    String inputOtp = _otpController.text.trim();
+
+    if (inputOtp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Vui lòng nhập đủ 6 số OTP")),
+      );
+      return;
+    }
+
+    // TRƯỜNG HỢP 1: QUÊN MẬT KHẨU
+    if (widget.isForgotPassword) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(
+            email: widget.email,
+            otpCode: inputOtp, 
+          ),
+        ),
+      );
+      return; 
+    }
+
+    // TRƯỜNG HỢP 2: ĐĂNG KÝ
+    if (widget.password == null || widget.fullName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lỗi dữ liệu đăng ký!")),
       );
       return;
     }
@@ -110,9 +140,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
     bool success = await AuthService().verifyAndRegister(
       widget.email,
-      widget.password,
-      widget.fullName,
-      _otpController.text,
+      widget.password!,
+      widget.fullName!,
+      inputOtp,
     );
 
     setState(() => _isLoading = false);
@@ -120,7 +150,10 @@ class _OtpScreenState extends State<OtpScreen> {
     if (success) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đăng ký thành công! Vui lòng đăng nhập.")),
+        const SnackBar(
+          content: Text("Đăng ký thành công! Vui lòng đăng nhập."),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.pushAndRemoveUntil(
         context,
@@ -143,7 +176,7 @@ class _OtpScreenState extends State<OtpScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Xác thực OTP"),
+          title: Text(widget.isForgotPassword ? "Quên Mật Khẩu" : "Đăng Ký"),
           centerTitle: true,
         ),
         body: Padding(
@@ -202,15 +235,14 @@ class _OtpScreenState extends State<OtpScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        "Xác nhận",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      child: Text(
+                        widget.isForgotPassword ? "Tiếp tục" : "Xác nhận & Đăng ký",
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
               
               const SizedBox(height: 24),
   
-              // --- PHẦN GỬI LẠI MÃ ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

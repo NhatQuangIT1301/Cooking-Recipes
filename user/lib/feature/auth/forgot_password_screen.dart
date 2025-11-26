@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/auth_service.dart';
+import 'otp_screen.dart'; // Đảm bảo import đúng đường dẫn file OTP
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -9,11 +11,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // Quản lý state trực tiếp, không cần model
+  // Quản lý state trực tiếp
   late TextEditingController _emailController;
   late FocusNode _emailFocusNode;
+  bool _isLoading = false;
 
-  // Định nghĩa màu sắc (trích xuất từ theme của FlutterFlow)
+  // Định nghĩa màu sắc
   final Color primaryBackgroundColor = const Color(0xFFF1F4F8);
   final Color primaryTextColor = const Color(0xFF15161E);
   final Color secondaryTextColor = const Color(0xFF606A85);
@@ -22,18 +25,65 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final Color errorBorderColor = const Color(0xFFFF5963);
   final Color buttonColor = const Color(0xFF4FB239);
   final Color whiteColor = Colors.white;
+  
+  // --- HÀM XỬ LÝ GỬI LINK ---
+  Future<void> _handleSendLink() async {
+    String email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng nhập email")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // Gọi API từ AuthService
+    final authService = AuthService();
+    // Lưu ý: Hàm forgotPassword thường chỉ cần email để gửi OTP
+    bool success = await authService.forgotPassword(email);
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Đã gửi mã OTP! Vui lòng kiểm tra email."),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      // 🔥 CHUYỂN HƯỚNG SANG MÀN HÌNH OTP
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpScreen(
+            email: email,
+            isForgotPassword: true, // 🚩 Báo hiệu đây là luồng quên mật khẩu
+          ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Gửi thất bại. Email không tồn tại hoặc lỗi server."),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    // Khởi tạo controller và focus node
     _emailController = TextEditingController();
     _emailFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
-    // Hủy controller và focus node khi widget bị hủy
     _emailController.dispose();
     _emailFocusNode.dispose();
     super.dispose();
@@ -45,10 +95,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: primaryBackgroundColor,
       appBar: AppBar(
         backgroundColor: primaryBackgroundColor,
-        automaticallyImplyLeading: false, // Tắt nút back tự động
+        automaticallyImplyLeading: false,
         elevation: 0.0,
         centerTitle: false,
-        // Thay FlutterFlowIconButton bằng IconButton chuẩn
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_rounded,
@@ -56,16 +105,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             size: 30.0,
           ),
           onPressed: () {
-            // Dùng Navigator.pop chuẩn
             Navigator.of(context).pop();
           },
         ),
         title: Padding(
           padding: const EdgeInsets.only(left: 4.0),
-          // Thay FFLocalizations bằng Text chuẩn
           child: Text(
             'Back',
-            // Thay FlutterFlowTheme bằng TextStyle chuẩn
             style: GoogleFonts.outfit(
               color: primaryTextColor,
               fontSize: 16.0,
@@ -75,7 +121,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
       ),
       body: Align(
-        // Căn giữa và giới hạn chiều rộng
         alignment: Alignment.topCenter,
         child: Container(
           width: double.infinity,
@@ -103,7 +148,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 4.0),
                   child: Text(
-                    'We will send you an email with a link to reset your password.',
+                    'We will send you an email with a code to reset your password.',
                     style: GoogleFonts.plusJakartaSans(
                       color: secondaryTextColor,
                       fontSize: 14.0,
@@ -173,34 +218,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     cursorColor: focusedBorderColor,
                   ),
                 ),
-                // Nút Gửi Link
+                // Nút Gửi Link (Đã cập nhật logic)
                 Align(
                   alignment: Alignment.center,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 24.0),
-                    // Thay FFButtonWidget bằng ElevatedButton chuẩn
                     child: ElevatedButton(
-                      onPressed: () {
-                        print('Button-Send Link pressed ...');
-                        // TODO: Xử lý logic gửi email
-                      },
+                      // Nếu đang loading thì disable nút
+                      onPressed: _isLoading ? null : _handleSendLink,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: buttonColor,
                         foregroundColor: whiteColor,
+                        disabledBackgroundColor: buttonColor.withOpacity(0.6),
                         elevation: 3.0,
                         fixedSize: const Size(270.0, 50.0),
                         shape: RoundedRectangleBorder(
-                          // Thêm border radius cho đồng bộ
-                          borderRadius: BorderRadius.circular(12.0), 
+                          borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      child: Text(
-                        'Send Link',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      // Hiển thị vòng quay loading khi đang xử lý
+                      child: _isLoading 
+                        ? SizedBox(
+                            height: 24, 
+                            width: 24, 
+                            child: CircularProgressIndicator(
+                              color: whiteColor, 
+                              strokeWidth: 2.5
+                            )
+                          )
+                        : Text(
+                            'Send Code',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                     ),
                   ),
                 ),

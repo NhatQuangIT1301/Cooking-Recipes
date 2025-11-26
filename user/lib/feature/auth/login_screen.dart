@@ -40,65 +40,62 @@ class _LoginScreenState extends State<LoginScreen> {
       SnackBar(content: Text(message), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
     );
   }
-
-  // --- HÀM XỬ LÝ LOGIN BẰNG GOOGLE (Fix Lỗi 2) ---
-// Future<void> _handleGoogleLogin() async {
-//     setState(() => _isLoading = true);
-
-//     // Dòng này gọi code Firebase/Node.js để lấy token
-//     // HÀM NÀY PHẢI ĐÃ ĐƯỢC ĐỊNH NGHĨA VÀ TRẢ VỀ STRING? TRONG AuthService
-//     final tokenOrError = await AuthService().signInWithGoogle(); 
-
-//     setState(() => _isLoading = false);
-//     // Xử lý kết quả trả về từ AuthService
-//     if (tokenOrError != null && !tokenOrError.startsWith('Lỗi')) {
-//       // ✅ Đăng nhập thành công, tokenOrError là JWT Token
-      
-//       if (!mounted) return;
-//       // Chuyển trang khảo sát/onboarding
-//       Navigator.of(context).pushAndRemoveUntil(
-//         MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()), 
-//         (route) => false,
-//       );
-//     } else {
-//       // Đăng nhập thất bại (tokenOrError là thông báo lỗi)
-//       _showError(tokenOrError ?? "Đăng nhập Google thất bại (Sai cấu hình Firebase).");
-//     }
-// }
-
-// // --- HÀM XỬ LÝ LOGIN EMAIL/PASS (Fix Lỗi 3) ---
-// Future<void> _handleLogin() async {
-//     // 1. Validate Form (Kiểm tra đã nhập đủ chưa)
-//     if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
-//       _showError("Vui lòng nhập email và mật khẩu.");
-//       return;
-//     }
+  // HÀM 1: XỬ LÝ LOGIN GOOGLE
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
     
-//     setState(() => _isLoading = true);
+    final authService = AuthService();
+    // Gọi hàm loginWithGoogle trả về bool
+    final bool success = await authService.loginWithGoogle();
+  
+    setState(() => _isLoading = false);
 
-//     // 2. Gọi API Login (HÀM NÀY PHẢI ĐƯỢC ĐỊNH NGHĨA TRONG AuthService)
-//     final tokenOrError = await AuthService().signInWithEmail(
-//       _emailController.text.trim(),
-//       _passwordController.text,
-//     );
+    if (success) {
+      if (!mounted) return;
+      // Đăng nhập thành công -> Chuyển hướng
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
+        (route) => false,
+      );
+    } else {
+      _showError("Đăng nhập Google thất bại.");
+    }
+  }
+  // HÀM 2: XỬ LÝ LOGIN EMAIL/PASS 
+  Future<void> _handleLogin() async{
+    if (_emailController.text.trim(). isEmpty || _passwordController.text.isEmpty){
+      _showError("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
 
-//     setState(() => _isLoading = false);
+    setState(() => _isLoading =true);
+    //Gọi hàm vừa viết trong AuthService
+    final authService = AuthService();
+    final tokenError = await authService.signInWithEmail(
+      _emailController.text.trim(), 
+      _passwordController.text.trim(),
+    );
+    setState(() => _isLoading = false);
 
-//     // 3. Xử lý kết quả
-//     if (tokenOrError != null && !tokenOrError.startsWith('Lỗi')) {
-//       // ✅ Đăng nhập thành công
-      
-//       if (!mounted) return;
-//       // Chuyển trang khảo sát
-//       Navigator.of(context).pushAndRemoveUntil(
-//         MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
-//         (route) => false,
-//       );
-//     } else {
-//       // Đăng nhập thất bại (tokenOrError là thông báo lỗi)
-//       _showError(tokenOrError ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại email/pass.");
-//     }
-// }
+    _processLoginResult(tokenError);
+  }
+
+  // HÀM PHỤ: Xử lý kết quả chung (đỡ phải viết lặp lại)
+  void _processLoginResult(String? result){
+    if(result != null && !result.startsWith('Lỗi') && !result.contains('thất bại')) {
+      // ✅ Thành công (result là Token)
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
+        (route) => false,
+      );
+    } else {
+      // ❌ Thất bại (result là thông báo lỗi)
+      _showError(result ?? "Đăng nhập thất bại. Vui lòng thử lại.");
+    }
+  }
+
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -167,13 +164,9 @@ class _LoginScreenState extends State<LoginScreen> {
   
                   // --- NÚT LOGIN CHÍNH ---
                   ElevatedButton(
-                    onPressed: () {
-                      // Giả lập Login thành công -> Chuyển thẳng qua trang Khảo sát
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
-                        (route) => false,
-                      );
-                    },
+                    // 
+                    // ⚠️ GỌI HÀM XỬ LÝ LOGIN THẬT SỰ
+                    onPressed: isProcessing ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: whiteColor,
@@ -208,27 +201,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 30),
                   
                   // --- NÚT GOOGLE (ĐÃ BẬT LẠI LOGIC) ---
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     Container(
-                  //       decoration: BoxDecoration(
-                  //         color: whiteColor,
-                  //         shape: BoxShape.circle,
-                  //         border: Border.all(color: textFieldBorderColor, width: 2.0),
-                  //         // FIX OPACITY
-                  //         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5, offset: const Offset(0, 2))],
-                  //       ),
-                  //       child: IconButton(
-                  //         onPressed: isProcessing ? null : _handleGoogleLogin, // Gọi hàm Google Login
-                  //         icon: const Icon(Icons.g_mobiledata, color: Colors.red, size: 40), // Tạm dùng icon này
-                  //         padding: const EdgeInsets.all(8.0),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: whiteColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: textFieldBorderColor, width: 2.0),
+                          // FIX OPACITY
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5, offset: const Offset(0, 2))],
+                        ),
+                        child: IconButton(
+                          onPressed: isProcessing ? null : _handleGoogleLogin, // Gọi hàm Google Login
+                          icon: const Icon(Icons.g_mobiledata, color: Colors.red, size: 40), // Tạm dùng icon này
+                          padding: const EdgeInsets.all(8.0),
+                        ),
+                      ),
+                    ],
+                  ),
 
-                  // const SizedBox(height: 30), 
+                  const SizedBox(height: 30), 
                   
                    // Link Sign Up
                   Row(

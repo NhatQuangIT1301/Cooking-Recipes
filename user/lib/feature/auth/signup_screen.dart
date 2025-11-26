@@ -67,53 +67,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // --- HÀM XỬ LÝ ĐĂNG KÝ CHUẨN ---
   Future<void> _handleSignUp() async {
-    // 1. Ẩn bàn phím để giao diện gọn gàng
+    // 1. Ẩn bàn phím
     FocusScope.of(context).unfocus();
 
-    // 2. Kiểm tra Form
+    // 2. Validate Form
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // 3. Bật Loading
     setState(() => _isLoading = true);
 
-    // 4. Gọi API Gửi OTP
-    // Lưu ý: Trim() để xóa khoảng trắng thừa
-    final String email = _emailController.text.trim();
-    final String fullName = _fullNameController.text.trim(); // Trim tên luôn
-    final String password = _passwordController.text; // Pass giữ nguyên
-
+    // 3. Gọi API (Tạo instance AuthService trước)
     final authService = AuthService();
+    
+    // Trim() để xóa khoảng trắng thừa
+    final String email = _emailController.text.trim();
+    final String fullName = _fullNameController.text.trim(); 
+    final String password = _passwordController.text;
+
+    // Gọi hàm gửi OTP
     bool isSent = await authService.sendOtp(email);
 
-    // 5. Tắt Loading
+    // 4. Tắt Loading (Dù thành công hay thất bại cũng phải tắt)
     setState(() => _isLoading = false);
 
-    // 6. Xử lý kết quả
+    // 5. Xử lý kết quả
     if (isSent) {
-      // Nếu thành công -> Chuyển sang màn hình OTP và mang theo dữ liệu
+      // ✅ Thành công -> Chuyển trang
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OtpScreen(
-              fullName: fullName, // Truyền tên đã trim
-              email: email,       // Truyền email đã trim
-              password: password, // Truyền pass
+              fullName: fullName,
+              email: email,
+              password: password,
             ),
           ),
         );
       }
     } else {
-      // Nếu thất bại -> Hiện thông báo lỗi
+      // ❌ Thất bại -> Báo lỗi
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("Gửi OTP thất bại! Email có thể đã được đăng ký."),
+            content: const Text("Gửi OTP thất bại! Kiểm tra kết nối mạng hoặc Email đã tồn tại."),
             backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating, // Hiển thị kiểu nổi đẹp hơn
-            margin: const EdgeInsets.all(16),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
