@@ -1,50 +1,126 @@
-// services/auth_service.dart
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/material.dart';
+import 'dart:convert';
+// import 'package:firebase_auth/firebase_auth.dart'; 
+// import 'package:google_sign_in/google_sign_in.dart'; 
+import 'package:http/http.dart' as http;
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // --- CẤU HÌNH CỦA CLASS (BIẾN baseUrl NẰM Ở ĐÂY) ---
+  // final FirebaseAuth _auth = FirebaseAuth.instance;
+  // final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
+  // Biến này có thể được truy cập bởi mọi hàm trong class
+  final String baseUrl = "https://jade-tangential-ralph.ngrok-free.dev/api/auth"; 
 
-  // Hàm xử lý đăng nhập Google
-  Future<UserCredential?> signInWithGoogle() async {
+  // ==========================================================
+  // PHẦN 1: ĐĂNG NHẬP GOOGLE 
+  // (Giữ lại logic này để đảm bảo nút Google Login không bị lỗi)
+  // ==========================================================
+  
+  // Future<String?> signInWithGoogle() async { 
+  //   try {
+  //     final googleUser = await _googleSignIn.signIn();
+  //     if (googleUser == null) return "Lỗi: Người dùng hủy đăng nhập.";
+
+  //     final googleAuth = await googleUser.authentication;
+  //     final String? idToken = googleAuth.idToken;
+
+  //     if (idToken == null) return "Lỗi: Không lấy được ID Token.";
+      
+  //     final response = await http.post(
+  //       Uri.parse('$baseUrl/google-login'),
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({
+  //         'idToken': idToken,
+  //         'email': googleUser.email,
+  //         'name': googleUser.displayName,
+  //       }),
+  //     );
+
+  //     final data = jsonDecode(response.body);
+
+  //     if (response.statusCode == 200) {
+  //       return data['token']; 
+  //     } else {
+  //       return data['message'] ?? "Lỗi đăng nhập từ Server.";
+  //     }
+  //   } catch (e) {
+  //     print("❌ Lỗi đăng nhập Google: $e");
+  //     return "Lỗi kết nối hoặc cấu hình Firebase.";
+  //   }
+  // }
+
+  // Future<void> signOut() async {
+  //   await _googleSignIn.signOut();
+  //   await _auth.signOut();
+  // }
+
+  // ==========================================================
+  // PHẦN 2: ĐĂNG NHẬP EMAIL/PASS (HÀM CẦN BỔ SUNG)
+  // ==========================================================
+  
+// Hàm này trả về JWT Token (String) nếu thành công hoặc String lỗi.
+//   Future<String?> signInWithEmail(String email, String password) async {
+//     try {
+//       final response = await http.post(
+//         // ✅ TRUY CẬP ĐÚNG baseUrl
+//         Uri.parse('$baseUrl/login'), 
+//         headers: {'Content-Type': 'application/json'},
+//         body: jsonEncode({
+//           'email': email,
+//           'password': password,
+//         }),
+//       );
+
+//       final data = jsonDecode(response.body);
+
+//       if (response.statusCode == 200) {
+//         return data['token']; // Đăng nhập thành công, trả về Token
+//       } else {
+//         // Trả về thông báo lỗi cụ thể từ Server 
+//         return data['message'] ?? "Lỗi đăng nhập không xác định."; 
+//       }
+//     } catch (e) {
+//       print("❌ Lỗi kết nối API Login: $e");
+//       return "Lỗi kết nối Server.";
+//     }
+//   }
+  // ==========================================================
+  // PHẦN 3: ĐĂNG KÝ OTP (GIỮ NGUYÊN)
+  // ==========================================================
+
+  Future<bool> sendOtp(String email) async {
     try {
-      // 1. Kích hoạt luồng đăng nhập Google (mở popup chọn mail)
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
-      if (googleUser == null) {
-        return null; // Người dùng hủy đăng nhập
-      }
-
-      // 2. Lấy thông tin xác thực (Token) từ request trên
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // 3. Tạo credential để gửi cho Firebase
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final response = await http.post(
+        Uri.parse('$baseUrl/send-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
       );
-
-      // 4. Đăng nhập vào Firebase
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      
-      // --- LƯU Ý QUAN TRỌNG CHO BACKEND NODE.JS ---
-      // Nếu bạn dùng Node.js, bạn cần lấy ID Token này gửi về server:
-      // String? idToken = await userCredential.user?.getIdToken();
-      // await sendTokenToNodeJsBackend(idToken);
-      // ---------------------------------------------
-
-      return userCredential;
+      if (response.statusCode == 200) return true;
+      else return false;
     } catch (e) {
-      print("Lỗi đăng nhập Google: $e");
-      return null;
+      print("❌ Lỗi kết nối API Send OTP: $e");
+      return false;
     }
   }
 
-  // Hàm đăng xuất
-  Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
+  Future<bool> verifyAndRegister(String email, String password, String fullName, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'fullName': fullName,
+          'otp': otp
+        }),
+      );
+
+      if (response.statusCode == 200) return true;
+      else return false;
+    } catch (e) {
+      print("❌ Lỗi kết nối API Register: $e");
+      return false;
+    }
   }
 }

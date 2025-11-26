@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ĐÃ XÓA
 import '../auth/login_screen.dart';
-// THÊM MỚI: Import trang OTP vừa tạo
-import 'otp_screen.dart';
-// THÊM MỚI: Import trang Home (để dùng trong OTP Screen)
+import 'otp_screen.dart'; // Đảm bảo file này đã tồn tại
+import '../services/auth_service.dart'; 
 
-
-/// Create a page for sign Up, can sign up by Google or Facebook
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -20,21 +16,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _fullNameController;
-  late FocusNode _fullNameFocusNode;
-
   late TextEditingController _emailController;
-  late FocusNode _emailFocusNode;
-
   late TextEditingController _passwordController;
-  late FocusNode _passwordFocusNode;
-  bool _passwordVisibility = false;
   
-  // SỬA ĐỔI: Loading mặc định là false
   bool _isLoading = false; 
+  bool _passwordVisibility = false;
 
-  // Định nghĩa các màu và style
   final Color primaryColor = const Color(0xFF568C4C);
-  final Color primaryBackgroundColor = const Color(0xFFF1F4F8); // Giả định
+  final Color primaryBackgroundColor = const Color(0xFFF1F4F8);
   final Color secondaryBackgroundColor = const Color(0xFFFFFFFF);
   final Color secondaryTextColor = const Color(0xFF57636C);
   final Color alternateColor = const Color(0xFFE0E3E7);
@@ -44,40 +33,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void initState() {
     super.initState();
     _fullNameController = TextEditingController();
-    _fullNameFocusNode = FocusNode();
-
     _emailController = TextEditingController();
-    _emailFocusNode = FocusNode();
-
     _passwordController = TextEditingController();
-    _passwordFocusNode = FocusNode();
-    _passwordVisibility = false; 
-    // _isLoading = false; // Đã sửa ở trên
   }
 
   @override
   void dispose() {
     _fullNameController.dispose();
-    _fullNameFocusNode.dispose();
     _emailController.dispose();
-    _emailFocusNode.dispose();
     _passwordController.dispose();
-    _passwordFocusNode.dispose();
     super.dispose();
   }
 
-  // --- Các hàm Validators (Giữ nguyên) ---
+  // --- Validators ---
   String? _nameValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your full name';
-    }
+    if (value == null || value.isEmpty) return 'Please enter your full name';
     return null;
   }
 
   String? _emailValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email';
-    }
+    if (value == null || value.isEmpty) return 'Please enter your email';
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
       return 'Please enter a valid email';
     }
@@ -85,403 +60,237 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   String? _passwordValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your password';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
+    if (value == null || value.isEmpty) return 'Please enter your password';
+    if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
-  // --- Hết Validators ---
 
-  // --- THÊM MỚI: Hàm xử lý Đăng ký và chuyển sang OTP ---
+  // --- HÀM XỬ LÝ ĐĂNG KÝ CHUẨN ---
   Future<void> _handleSignUp() async {
-    // 1. Kiểm tra Form hợp lệ
+    // 1. Ẩn bàn phím để giao diện gọn gàng
+    FocusScope.of(context).unfocus();
+
+    // 2. Kiểm tra Form
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // 2. Bật Loading
+    // 3. Bật Loading
     setState(() => _isLoading = true);
 
-    // 3. Giả lập gọi API gửi OTP (1.5 giây)
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // 4. Gọi API Gửi OTP
+    // Lưu ý: Trim() để xóa khoảng trắng thừa
+    final String email = _emailController.text.trim();
+    final String fullName = _fullNameController.text.trim(); // Trim tên luôn
+    final String password = _passwordController.text; // Pass giữ nguyên
 
-    // 4. Tắt Loading
+    final authService = AuthService();
+    bool isSent = await authService.sendOtp(email);
+
+    // 5. Tắt Loading
     setState(() => _isLoading = false);
 
-    // 5. Chuyển sang màn hình OTP (mang theo dữ liệu đã nhập)
-    if (mounted) { // Kiểm tra xem widget còn tồn tại không
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OtpScreen(
-            fullName: _fullNameController.text,
-            email: _emailController.text,
-            password: _passwordController.text,
+    // 6. Xử lý kết quả
+    if (isSent) {
+      // Nếu thành công -> Chuyển sang màn hình OTP và mang theo dữ liệu
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpScreen(
+              fullName: fullName, // Truyền tên đã trim
+              email: email,       // Truyền email đã trim
+              password: password, // Truyền pass
+            ),
           ),
-        ),
-      );
+        );
+      }
+    } else {
+      // Nếu thất bại -> Hiện thông báo lỗi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Gửi OTP thất bại! Email có thể đã được đăng ký."),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating, // Hiển thị kiểu nổi đẹp hơn
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
     }
-
-    /* --- PHẦN CODE BACKEND THẬT SẼ VIẾT SAU ---
-    try {
-      // 1. Gọi API /api/auth/send-otp
-      // ... http.post ...
-      
-      // 2. Nếu thành công (response.statusCode == 200)
-      Navigator.push(context, MaterialPageRoute(...));
-
-      // 3. Nếu thất bại (email trùng, lỗi server...)
-      // ScaffoldMessenger.of(context).showSnackBar(...)
-
-    } catch (e) { ... }
-    finally {
-      setState(() => _isLoading = false);
-    }
-    */
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: primaryBackgroundColor,
         body: SafeArea(
-          top: true,
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                      child: Column(
-                    mainAxisSize: MainAxisSize.min, 
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // --- Phần Header ---
-                      Align(
-                        alignment: AlignmentDirectional.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Create Account',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.interTight(
-                                fontSize: 32.0,
-                                fontWeight: FontWeight.bold,
-                                color: primaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(height: 16.0),
-                            Text(
-                              'Join us today and get started',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                color: secondaryTextColor,
-                                fontSize: 16, 
-                                letterSpacing: 0.0,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
+            child: Center( // Thêm Center để căn giữa màn hình dọc
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // --- Header ---
+                    Text(
+                      'Create Account',
+                      style: GoogleFonts.interTight(
+                        fontSize: 32.0,
+                        fontWeight: FontWeight.bold,
+                        color: primaryTextColor,
                       ),
-                      const SizedBox(height: 32.0), 
+                    ),
+                    const SizedBox(height: 16.0),
+                    Text(
+                      'Join us today and get started',
+                      style: GoogleFonts.inter(
+                        color: secondaryTextColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 32.0),
 
-                      // --- Phần Form ---
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
+                    // --- Form ---
+                    Form(
+                      key: _formKey,
+                      child: Column(
                         children: [
-                          Form(
-                            key: _formKey,
-                            autovalidateMode: AutovalidateMode.disabled,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                // --- Full Name ---
-                                TextFormField(
-                                  controller: _fullNameController,
-                                  focusNode: _fullNameFocusNode,
-                                  autofocus: false,
-                                  textCapitalization: TextCapitalization.words,
-                                  textInputAction: TextInputAction.next,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    hintText: 'Full Name',
-                                    hintStyle: GoogleFonts.inter(
-                                      color: secondaryTextColor,
-                                      letterSpacing: 0.0,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: alternateColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: primaryColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: secondaryBackgroundColor,
-                                    contentPadding: const EdgeInsets.all(16.0),
-                                  ),
-                                  style: GoogleFonts.inter(
-                                    color: primaryTextColor,
-                                    letterSpacing: 0.0,
-                                  ),
-                                  keyboardType: TextInputType.name,
-                                  cursorColor: primaryColor,
-                                  validator: _nameValidator,
-                                ),
-                                const SizedBox(height: 16.0),
-                                // --- Email ---
-                                TextFormField(
-                                  controller: _emailController,
-                                  focusNode: _emailFocusNode,
-                                  autofocus: false,
-                                  textInputAction: TextInputAction.next,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    hintText: 'Email Address',
-                                    hintStyle: GoogleFonts.inter(
-                                      color: secondaryTextColor,
-                                      letterSpacing: 0.0,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: alternateColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: primaryColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: secondaryBackgroundColor,
-                                    contentPadding: const EdgeInsets.all(16.0),
-                                  ),
-                                  style: GoogleFonts.inter(
-                                    color: primaryTextColor,
-                                    letterSpacing: 0.0,
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  cursorColor: primaryColor,
-                                  validator: _emailValidator,
-                                ),
-                                const SizedBox(height: 16.0),
-                                // --- Password ---
-                                TextFormField(
-                                  controller: _passwordController,
-                                  focusNode: _passwordFocusNode,
-                                  autofocus: false,
-                                  textInputAction: TextInputAction.done,
-                                  obscureText: !_passwordVisibility,
-                                  decoration: InputDecoration(
-                                    hintText: 'Password',
-                                    hintStyle: GoogleFonts.inter(
-                                      color: secondaryTextColor,
-                                      letterSpacing: 0.0,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: alternateColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: primaryColor,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.error,
-                                        width: 1.0,
-                                      ),
-                                      borderRadius:
-                                          BorderRadius.circular(12.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: secondaryBackgroundColor,
-                                    contentPadding: const EdgeInsets.all(16.0),
-                                    suffixIcon: InkWell(
-                                      onTap: () => setState(
-                                        () => _passwordVisibility =
-                                            !_passwordVisibility,
-                                      ),
-                                      focusNode:
-                                          FocusNode(skipTraversal: true),
-                                      child: Icon(
-                                        _passwordVisibility
-                                            ? Icons.visibility_outlined
-                                            : Icons.visibility_off_outlined,
-                                        color: secondaryTextColor,
-                                        size: 20.0,
-                                      ),
-                                    ),
-                                  ),
-                                  style: GoogleFonts.inter(
-                                    color: primaryTextColor,
-                                    letterSpacing: 0.0,
-                                  ),
-                                  cursorColor: primaryColor,
-                                  validator: _passwordValidator,
-                                ),
-                              ],
-                            ),
+                          // Full Name Input
+                          TextFormField(
+                            controller: _fullNameController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: _buildInputDecoration('Full Name'),
+                            style: GoogleFonts.inter(color: primaryTextColor),
+                            validator: _nameValidator,
                           ),
                           const SizedBox(height: 16.0),
-                          // --- Nút Create Account ---
-                          ElevatedButton(
-                            // SỬA ĐỔI: Thêm logic loading
-                            onPressed: _isLoading ? null : _handleSignUp,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor, 
-                              minimumSize: const Size(double.infinity, 50.0),
-                              padding: const EdgeInsets.all(8.0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.0),
-                              ),
-                              elevation: 0.0,
-                            ),
-                            // SỬA ĐỔI: Hiển thị vòng xoay
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 3,
-                                    ),
-                                  )
-                                : Text(
-                                    'Create Account',
-                                    style: GoogleFonts.interTight(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16, 
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32.0), // Khoảng cách
 
-                      // --- PHẦN SOCIAL ĐÃ BỊ XÓA ---
-                      
-                      // --- Phần "Sign In" ---
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Already have an account?  ',
-                            style: GoogleFonts.inter(
-                              color: secondaryTextColor,
-                              letterSpacing: 0.0,
-                            ),
+                          // Email Input
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: _buildInputDecoration('Email Address'),
+                            style: GoogleFonts.inter(color: primaryTextColor),
+                            validator: _emailValidator,
                           ),
-                          InkWell(
-                            onTap: () {
-                              if (Navigator.canPop(context)) {
-                                Navigator.pop(context);
-                              } else {
-                                Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            const LoginScreen()));
-                              }
-                            },
-                            child: Text(
-                              'Sign In',
-                              style: GoogleFonts.inter(
-                                color: primaryColor, 
-                                letterSpacing: 0.0,
-                                fontWeight: FontWeight.w600,
+                          const SizedBox(height: 16.0),
+
+                          // Password Input
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: !_passwordVisibility,
+                            decoration: _buildInputDecoration('Password').copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _passwordVisibility
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: secondaryTextColor,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(() => _passwordVisibility = !_passwordVisibility),
                               ),
                             ),
+                            style: GoogleFonts.inter(color: primaryTextColor),
+                            validator: _passwordValidator,
                           ),
                         ],
                       ),
-                    ],
-                  )),
+                    ),
+                    const SizedBox(height: 32.0),
+
+                    // --- Create Account Button ---
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleSignUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        minimumSize: const Size(double.infinity, 50.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                            )
+                          : Text(
+                              'Create Account',
+                              style: GoogleFonts.interTight(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
+
+                    const SizedBox(height: 32.0),
+
+                    // --- Sign In Link ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account?  ',
+                          style: GoogleFonts.inter(color: secondaryTextColor),
+                        ),
+                        InkWell(
+                          onTap: () {
+                            // Dùng pushReplacement để không quay lại trang đăng ký được
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            );
+                          },
+                          child: Text(
+                            'Sign In',
+                            style: GoogleFonts.inter(
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Hàm style cho Input (Helper function)
+  InputDecoration _buildInputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.inter(color: secondaryTextColor),
+      filled: true,
+      fillColor: secondaryBackgroundColor,
+      contentPadding: const EdgeInsets.all(16.0),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: alternateColor, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: primaryColor, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.red, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.red, width: 1.0),
+        borderRadius: BorderRadius.circular(12.0),
       ),
     );
   }
