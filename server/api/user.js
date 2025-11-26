@@ -3,7 +3,7 @@ const router = express.Router();
 //Import Controller
 const authController = require('../controller/user/authController');
 // 1. Đăng nhập Google (Social Login)
-// router.post('/google-login', authController.googleLogin);
+router.post('/google-login', authController.googleLogin);
 
 // 2. Bước 1: Nhập email -> Gửi OTP
 router.post('/send-otp', authController.sendOtpCode);
@@ -11,7 +11,11 @@ router.post('/send-otp', authController.sendOtpCode);
 // 3. Bước 2: Nhập Full thông tin + OTP -> Đăng ký hoàn tất
 router.post('/register', authController.verifyAndRegister);
 
-// 3. Đăng nhập Email/Password
-// router.post('/login', authController.loginUser);
+// 4. Đăng nhập Email/Password
+router.post('/login', authController.loginUser);
+
+router.post('/forgot-password', authController.forgotPassword); // Gửi OTP
+
+router.post('/reset-password-otp', authController.resetPasswordWithOTP); // Đổi Pass
 
 module.exports = router;

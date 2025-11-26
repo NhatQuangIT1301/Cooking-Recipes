@@ -1,4 +1,4 @@
-// // File: server/config/firebase.js
+// // // File: server/config/firebase.js
 
 // const admin = require('firebase-admin');
 
