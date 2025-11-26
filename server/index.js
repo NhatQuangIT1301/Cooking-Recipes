@@ -1,34 +1,33 @@
 require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-//Import Route
-const userRoute  = require('./api/user');
-const { default: mongoose } = require('mongoose');
-// const adminRoute = require('./api/admin');
+
+// Import DB và Routes
+const connectDB = require('./config/db'); 
+const userRoute = require('./api/user'); 
+
+// Kết nối Database
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-//--1.MiddileWate---
-app.use(cors()); //Cho phép người khác gọi vòa
-app.use(bodyParser.json({ limit: '10mb'}));
-app.use(bodyParser.urlencoded({ extended: true, limit:'10mb'}));
+// --- KHU VỰC QUAN TRỌNG NHẤT (MIDDLEWARE) ---
+// Các dòng này BẮT BUỘC phải nằm TRÊN dòng app.use('/api/auth'...)
+app.use(cors());
+app.use(express.json()); // <--- Dòng này giúp đọc req.body
+app.use(express.urlencoded({ extended: true }));
+// ---------------------------------------------
 
-//---2.Kết nối MongoDB---
-mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://admin:adminCR72538473029@cookingrecipes.1hsfmmq.mongodb.net/')
-.then(()=> console.log("Đã kết nối với MongoDB"))
-.catch((err)=> console.error("Lỗi Kết Nối MongoDB", err));
-
-//---3. Routes ---
-app.get('./helo', (req,res) =>{
-    res.json({ message: "Hello!"});
+// Route test
+app.get('/', (req, res) => {
+    res.send("API Cooking Recipes đang chạy 🚀");
 });
 
-app.use('/api/user', userRoute);
-//app.use('/api/admin', adminRoute);
+// Route chính
+app.use('/api/auth', userRoute); 
 
-//---4.Khởi chạy SERVER ----
-app.listen(PORT, ()=>{
-    console.log(`Server đang lằng nghe tại cổng ${PORT}`);
+// Chạy Server
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server đang lắng nghe tại cổng ${PORT}`);
 });

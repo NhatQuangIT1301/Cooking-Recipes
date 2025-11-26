@@ -9,3 +9,5 @@ dist/
 .env
 .env.local
 .DS_Store
+.early.coverage
+cookingrecipes-86b06-firebase-adminsdk-fbsvc-188b0062b8.json
