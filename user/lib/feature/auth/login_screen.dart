@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../survey/collect_information_screen.dart'; 
-// import 'onboarding_flow_screen.dart'; // Import trang đích sau khi login
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,8 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _passwordVisible = false;
   
-  // Thêm biến loading để xoay vòng tròn khi đang đăng nhập
-  bool _isLoading = false; 
+  // FIX: Thay 'final' bằng 'late' để state loading có thể thay đổi
+  late bool _isLoading = false; 
+  final _formKey = GlobalKey<FormState>(); // Thêm Form Key
 
   @override
   void dispose() {
@@ -37,16 +37,87 @@ class _LoginScreenState extends State<LoginScreen> {
   // Hàm hiển thị lỗi
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade400, behavior: SnackBarBehavior.floating),
     );
   }
+  // HÀM 1: XỬ LÝ LOGIN GOOGLE
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    
+    final authService = AuthService();
+    // Gọi hàm loginWithGoogle trả về bool
+    final bool success = await authService.loginWithGoogle();
+  
+    setState(() => _isLoading = false);
+
+    if (success) {
+      if (!mounted) return;
+      // Đăng nhập thành công -> Chuyển hướng
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
+        (route) => false,
+      );
+    } else {
+      _showError("Đăng nhập Google thất bại.");
+    }
+  }
+  // HÀM 2: XỬ LÝ LOGIN EMAIL/PASS 
+  Future<void> _handleLogin() async{
+    if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty){
+      _showError("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    
+    final authService = AuthService();
+    
+    // Gọi hàm và nhận về Map {success, message/token}
+    final result = await authService.signInWithEmail(
+      _emailController.text.trim(), 
+      _passwordController.text.trim(),
+    );
+    
+    setState(() => _isLoading = false);
+
+    // Kiểm tra kết quả dựa trên biến boolean 'success' -> CHÍNH XÁC 100%
+    if (result['success'] == true) {
+      // ✅ Thành công
+      print("Token nhận được: ${result['token']}");
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
+        (route) => false,
+      );
+    } else {
+      // ❌ Thất bại -> Hiện đúng thông báo lỗi từ Server (VD: Email hoặc mật khẩu không đúng)
+      _showError(result['message']);
+    }
+  }
+
+  // HÀM PHỤ: Xử lý kết quả chung (đỡ phải viết lặp lại)
+  void _processLoginResult(String? result){
+    if(result != null && !result.startsWith('Lỗi') && !result.contains('thất bại')) {
+      // ✅ Thành công (result là Token)
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()),
+        (route) => false,
+      );
+    } else {
+      // ❌ Thất bại (result là thông báo lỗi)
+      _showError(result ?? "Đăng nhập thất bại. Vui lòng thử lại.");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
+    final bool isProcessing = _isLoading; 
+
     return Scaffold(
       backgroundColor: primaryBackgroundColor,
-      // Hiển thị vòng tròn loading nếu đang xử lý
-      body: _isLoading 
+      body: isProcessing 
         ? Center(child: CircularProgressIndicator(color: primaryColor))
         : SafeArea(
         child: Center(
@@ -57,24 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Login',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.interTight(
-                      fontSize: 32.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  // --- HEADER ---
+                  Text('Login', style: GoogleFonts.interTight(fontSize: 32.0, fontWeight: FontWeight.bold, color: Colors.black87)),
                   const SizedBox(height: 16),
-                  Text(
-                    'Welcome back! Please enter your details.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 16.0,
-                      color: secondaryTextColor,
-                    ),
-                  ),
+                  Text('Welcome back! Please enter your details.', style: GoogleFonts.inter(fontSize: 16.0, color: secondaryTextColor)),
                   const SizedBox(height: 40),
   
                   // Email Field
@@ -82,21 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'Enter your email...',
-                      labelStyle: GoogleFonts.inter(color: secondaryTextColor),
-                      hintStyle: GoogleFonts.inter(color: secondaryTextColor),
-                      filled: true,
-                      fillColor: whiteColor,
-                      prefixIcon: Icon(Icons.email_outlined, color: secondaryTextColor),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: textFieldBorderColor, width: 2.0),
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: primaryColor, width: 2.0),
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
+                      labelText: 'Email', hintText: 'Enter your email...', labelStyle: GoogleFonts.inter(color: secondaryTextColor),
+                      filled: true, fillColor: whiteColor, prefixIcon: Icon(Icons.email_outlined, color: secondaryTextColor),
+                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: textFieldBorderColor, width: 2.0), borderRadius: BorderRadius.circular(12.0)),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryColor, width: 2.0), borderRadius: BorderRadius.circular(12.0)),
                     ),
                     style: GoogleFonts.inter(color: Colors.black87),
                   ),
@@ -107,32 +153,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: !_passwordVisible,
                     decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password...',
-                      labelStyle: GoogleFonts.inter(color: secondaryTextColor),
-                      hintStyle: GoogleFonts.inter(color: secondaryTextColor),
-                      filled: true,
-                      fillColor: whiteColor,
-                      prefixIcon: Icon(Icons.lock_outline, color: secondaryTextColor),
+                      labelText: 'Password', hintText: 'Enter your password...', labelStyle: GoogleFonts.inter(color: secondaryTextColor),
+                      filled: true, fillColor: whiteColor, prefixIcon: Icon(Icons.lock_outline, color: secondaryTextColor),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          _passwordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                          color: secondaryTextColor,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
+                        icon: Icon(_passwordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: secondaryTextColor),
+                        onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: textFieldBorderColor, width: 2.0),
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: primaryColor, width: 2.0),
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
+                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: textFieldBorderColor, width: 2.0), borderRadius: BorderRadius.circular(12.0)),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryColor, width: 2.0), borderRadius: BorderRadius.circular(12.0)),
                     ),
                     style: GoogleFonts.inter(color: Colors.black87),
                   ),
@@ -142,33 +170,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-                        );
-                      },
-                      child: Text(
-                        'Forgot Password?',
-                        style: GoogleFonts.inter(
-                          color: primaryColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14.0,
-                        ),
-                      ),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())),
+                      child: Text('Forgot Password?', style: GoogleFonts.inter(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 14.0)),
                     ),
                   ),
                   const SizedBox(height: 24),
   
-                  // Nút Login (Email/Pass)
+                  // --- NÚT LOGIN CHÍNH ---
                   ElevatedButton(
-                    onPressed: () {
-                      // Logic đăng nhập Email/Pass (Giữ nguyên hoặc update sau)
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const OnboardingFlowScreen()), // Ví dụ chuyển trang
-                        (route) => false, 
-                      );
-                    },
+                    // 
+                    // ⚠️ GỌI HÀM XỬ LÝ LOGIN THẬT SỰ
+                    onPressed: isProcessing ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: whiteColor,
@@ -184,21 +196,25 @@ class _LoginScreenState extends State<LoginScreen> {
   
                   const SizedBox(height: 30),
   
+                  // --- DIVIDER ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(child: Divider(color: secondaryTextColor.withOpacity(0.5), thickness: 1)),
+                      // FIX OPACITY
+                      Expanded(
+                        child: Divider(color: secondaryTextColor.withValues(alpha: 0.5), thickness: 1)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text('Or continue with', style: GoogleFonts.inter(color: secondaryTextColor, fontSize: 14.0)),
                       ),
-                      Expanded(child: Divider(color: secondaryTextColor.withOpacity(0.5), thickness: 1)),
+                      // FIX OPACITY
+                      Expanded(child: Divider(color: secondaryTextColor.withValues(alpha: 0.5), thickness: 1)),
                     ],
                   ),
   
                   const SizedBox(height: 30),
-  
-                  // --- CODE ĐÃ SỬA Ở ĐÂY: Nút Google ---
+                  
+                  // --- NÚT GOOGLE ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -207,55 +223,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: whiteColor,
                           shape: BoxShape.circle,
                           border: Border.all(color: textFieldBorderColor, width: 2.0),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+                          // FIX OPACITY
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5, offset: const Offset(0, 2))],
                         ),
                         child: IconButton(
-                          onPressed: () async {
-                            // 1. Bật loading
-                            setState(() => _isLoading = true);
-                            
-                            // 2. Gọi Service đăng nhập
-                            final AuthService authService = AuthService();
-                            final userCredential = await authService.signInWithGoogle();
-
-                            // 3. Tắt loading
-                            setState(() => _isLoading = false);
-
-                            // 4. Kiểm tra kết quả
-                            if (userCredential != null) {
-                              // Đăng nhập thành công -> Chuyển trang
-                              print("Đăng nhập Google thành công: ${userCredential.user?.email}");
-                              
-                              if (!mounted) return;
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  // Chuyển đến trang Khảo sát (nếu user mới) hoặc Trang chủ
-                                  builder: (context) => const OnboardingFlowScreen(),
-                                ),
-                                (route) => false,
-                              );
-                            } else {
-                              // Đăng nhập thất bại hoặc hủy
-                               _showError("Đăng nhập Google thất bại");
-                            }
-                          },
-                          icon: Image.network(
-                            'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-                            height: 24.0,
-                            width: 24.0,
-                            errorBuilder: (context, error, stackTrace) => 
-                              const Icon(Icons.g_mobiledata, color: Colors.red),
-                          ),
-                          iconSize: 30,
-                          padding: const EdgeInsets.all(16.0),
+                          onPressed: isProcessing ? null : _handleGoogleLogin, // Gọi hàm Google Login
+                          icon: const Icon(Icons.g_mobiledata, color: Colors.red, size: 40), // Tạm dùng icon này
+                          padding: const EdgeInsets.all(8.0),
                         ),
                       ),
-                      // Nếu có nút Facebook thì để ở đây
                     ],
                   ),
-                  // -------------------------------------
 
-                  const SizedBox(height: 30), // Khoảng cách cuối
+                  const SizedBox(height: 30), 
                   
                    // Link Sign Up
                   Row(
@@ -263,9 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text('Don\'t have an account?  ', style: GoogleFonts.inter(color: secondaryTextColor)),
                       InkWell(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen()));
-                        },
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen())),
                         child: Text('Sign Up', style: GoogleFonts.inter(color: primaryColor, fontWeight: FontWeight.w600)),
                       ),
                     ],

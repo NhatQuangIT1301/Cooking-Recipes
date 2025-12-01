@@ -81,7 +81,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (_formKey.currentState!.validate()) {
       FocusManager.instance.primaryFocus?.unfocus();
       // SỬA ĐỔI: Cập nhật logic lưu
-      // TODO: Thêm logic lưu phone, height, weight, goal vào Firebase
 
       print('Profile Saved!');
       print('New Phone: ${_phoneController.text}');
