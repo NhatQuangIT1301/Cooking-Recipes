@@ -10,7 +10,6 @@ const JwtUtil = {
         const payload = {
             _id: userData._id,
             username: userData.username,
-            role: userData.role
         };
 
         const token = jwt.sign(

@@ -22,9 +22,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  profile: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserProfile' // Link 1-1 đến Profile 
+  // profile: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'UserProfile' // Link 1-1 đến Profile 
+  // },
+  isVerified: {
+    type: Boolean,
+    default: false
   },
   isAdmin: {
     type: Boolean,
