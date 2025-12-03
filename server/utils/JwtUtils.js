@@ -9,7 +9,7 @@ const JwtUtil = {
         // Chỉ lấy các trường an toàn để đưa vào payload
         const payload = {
             _id: userData._id,
-            username: userData.username,
+            isAdmin: userData.isAdmin,
         };
 
         const token = jwt.sign(

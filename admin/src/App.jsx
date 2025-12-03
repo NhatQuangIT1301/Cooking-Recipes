@@ -22,56 +22,59 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./ProtectedRoute";
 import ResetPassForm from "./pages/AuthPages/ResetPassForm";
+import { AuthProvider } from "./hooks/AuthProvider";
 
 export default function App() {
   return (
     <>
       <Router>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Navigate to="/admin/signin"/>} />
-          {/* Auth Layout */}
-          <Route path="/admin/signin" element={<SignIn />} />
-          <Route path="/admin/reset_password" element={<ResetPassForm />} />
+        <AuthProvider>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/" element={<Navigate to="/admin/signin"/>} />
+            {/* Auth Layout */}
+            <Route path="/admin/signin" element={<SignIn />} />
+            <Route path="/admin/reset_password" element={<ResetPassForm />} />
 
-          {/* Dashboard Layout */}
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-            }>
-            <Route index element={<Home />} />
+            {/* Dashboard Layout */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+              }>
+              <Route index element={<Home />} />
 
-            {/* Others Page */}
-            <Route path="profile" element={<UserProfiles />} />
-            <Route path="blank" element={<Blank />} />
+              {/* Others Page */}
+              <Route path="profile" element={<UserProfiles />} />
+              <Route path="blank" element={<Blank />} />
 
-            {/* Tables */}
-            <Route path="recipe-tables" element={<RecipeTables />} />
-            <Route path="ingredient-tables" element={<IngreTables />} />
-            <Route path="tag-tables" element={<TagTables />} />
-            <Route path="pantry-tables" element={<PantryTables />} />
-            <Route path="user-tables" element={<UserTables />} />
+              {/* Tables */}
+              <Route path="recipe-tables" element={<RecipeTables />} />
+              <Route path="ingredient-tables" element={<IngreTables />} />
+              <Route path="tag-tables" element={<TagTables />} />
+              <Route path="pantry-tables" element={<PantryTables />} />
+              <Route path="user-tables" element={<UserTables />} />
 
-            {/* Ui Elements */}
-            <Route path="alerts" element={<Alerts />} />
-            <Route path="avatars" element={<Avatars />} />
-            <Route path="badge" element={<Badges />} />
-            <Route path="buttons" element={<Buttons />} />
-            <Route path="images" element={<Images />} />
-            <Route path="videos" element={<Videos />} />
+              {/* Ui Elements */}
+              <Route path="alerts" element={<Alerts />} />
+              <Route path="avatars" element={<Avatars />} />
+              <Route path="badge" element={<Badges />} />
+              <Route path="buttons" element={<Buttons />} />
+              <Route path="images" element={<Images />} />
+              <Route path="videos" element={<Videos />} />
 
-            {/* Forms */}
-            <Route path="form-elements" element={<FormElements />} />
+              {/* Forms */}
+              <Route path="form-elements" element={<FormElements />} />
 
-            {/* Charts */}
-            <Route path="line-chart" element={<LineChart />} />
-            <Route path="bar-chart" element={<BarChart />} />
-          </Route>
+              {/* Charts */}
+              <Route path="line-chart" element={<LineChart />} />
+              <Route path="bar-chart" element={<BarChart />} />
+            </Route>
 
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Fallback Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </Router>
     </>
   );

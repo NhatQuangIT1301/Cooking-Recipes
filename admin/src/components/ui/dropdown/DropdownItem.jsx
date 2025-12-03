@@ -8,6 +8,7 @@ export const DropdownItem = ({
   baseClassName = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
   className = "",
   children,
+  state = "",
 }) => {
   const combinedClasses = `${baseClassName} ${className}`.trim();
 
@@ -21,7 +22,7 @@ export const DropdownItem = ({
 
   if (tag === "a" && to) {
     return (
-      <Link to={to} className={combinedClasses} onClick={handleClick}>
+      <Link state={state} to={to} className={combinedClasses} onClick={handleClick}>
         {children}
       </Link>
     );

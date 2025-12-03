@@ -4,17 +4,21 @@ import svgr from "vite-plugin-svgr";
 
 // https://vite.dev/config/
 export default defineConfig({
-  // base:"/admin",
   server: {
     open: true,
     port: 4000,
     host: true,
     proxy: { //<----- Ket noi den server
       "/api": {
-      target: "http://localhost:3000",
-      changeOrigin: true,
-      secure: false,
-    },
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/uploads": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        secure: false,
+      }
     }
   },
   plugins: [

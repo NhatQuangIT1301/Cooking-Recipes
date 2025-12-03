@@ -16,7 +16,7 @@ const PageBreadcrumb = ({ pageTitle }) => {
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
               to="/admin"
             >
-              Home
+              Tổng quan
               <svg
                 className="stroke-current"
                 width="17"

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -27,6 +28,7 @@ const createDeafaultAdmin = async () => {
         if (!existingAdmin) {
             const hashedPassword = await Bcrypt.hash('AdminCookingRecipes@2526');
             const newAdmin = new User({
+                image: 'uploads/avatar-admin.png',
                 username: 'Admin',
                 email: 'cookingrecipes2526@gmail.com',
                 phone: '0914921033',
@@ -48,3 +50,4 @@ const createDeafaultAdmin = async () => {
 createDeafaultAdmin();
 
 app.use('/api/admin', require('./api/admin.js'));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));

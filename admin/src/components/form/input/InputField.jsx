@@ -29,6 +29,7 @@ const Input = ({
   return (
     <div className="relative">
       <input
+        re
         type={type}
         id={id}
         name={name}

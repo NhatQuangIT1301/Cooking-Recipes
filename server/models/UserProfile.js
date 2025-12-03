@@ -1,35 +1,97 @@
-const mongoose = require('mongoose');
+const { Type } = require('@google/genai');
+const { default: mongoose } = require('mongoose');
+const moongoose = require('mongoose');
 
-const userProfileSchema = new mongoose.Schema({
+const userProfileSchema = new moongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref:'User',
     required: true,
-    unique: true // Đảm bảo quan hệ 1-1 
+    unique:true
   },
-  height: { type: Number }, // cm
-  weightHistory: [{
-    value: Number,
-    date: { type: Date, default: Date.now }
-  }], // 
+  //Dữ liệu người dùng nhập
   gender: {
     type: String,
-    enum: ['male', 'female', 'other']
+    enum: ['Male','Female','Other']
   },
-  birthDate: { type: Date },
-  healthConditions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tag' // Tag type: 'healthCondition' 
+  // birthdate: {
+  //   type:Date.now
+  // },
+  age: {
+    type: Number
+  },
+  height: {
+    type: Number
+  },
+  weight: [{
+    type: Number,
+    date: { type: Date, default: Date.now }
   }],
-  nutritionGoal: {
+  target_weight: {
+    type: Number
+  },
+
+  activity_level: {
+    type: String,
+    default: 'Moderately Active'
+  },
+  health_conditions: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tag' // Tag type: 'dietGoal' 
+    ref: 'Tag'
+  }],
+  habit: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag'
+  }], 
+  goal: {
+    type: String
   },
   diet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tag' // Tag type: 'dietType' 
+    type: String
   },
-  habits: [{ type: String }]
-}, { timestamps: true });
 
-module.exports = mongoose.model('UserProfile', userProfileSchema);
+  //Kết quả của AI
+  nutrionTargets: {
+    bmi: {
+      type: Number
+    },
+    bmi_status: {
+      type: String
+    },
+    tdee: {
+      type: Number
+    },
+    dailyCalories: {
+      type: Number
+    },
+    water_intake: {
+      type: String
+    },
+    macros: {
+      protein : {
+        type: Number
+      },
+      carbs: {
+        type: Number
+      },
+      fat : {
+        type: Number
+      }
+    }
+  },
+
+  ai_recommendations: [{
+    type: String
+  }],
+  ai_foods_to_avoid: [{
+    type: String
+  }],
+  ai_meal_suggestions: [{
+    name: String,
+    calories: Number,
+    dessciption: String
+  }]
+
+}, {timestamps: true});
+
+module.exports = moongoose.model('UserProfile', userProfileSchema);

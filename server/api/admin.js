@@ -6,6 +6,8 @@ const AdminDAO = require('../controllers/AdminDAO');
 const JwtUtil = require('../utils/JwtUtils');
 const BcryptUtil = require('../utils/BcryptUtils');
 const EmailUtil = require('../utils/EmailUtils');
+const ImageUtils = require('../utils/UploadPictureUtils');
+const uploadPicture = require('../utils/UploadPictureUtils');
 
 //Đăng nhập
 router.post('/signin', async function(req, res) {
@@ -19,11 +21,7 @@ router.post('/signin', async function(req, res) {
                 res.json({
                     success: true,
                     message: 'Authentication successful',
-                    user: {
-                        username: admin.username,
-                        email: admin.email,
-                        phone: admin.phone
-                    },
+                    user: admin,
                     token: token,
                 });
             } else {
@@ -69,7 +67,7 @@ router.post('/send-otp', async function(req, res) {
     try {
         const admin = await AdminDAO.selectByEmail(email);
         if (!admin) {
-            return res.json({success: false, message: "Không tìm thấy tài khoản."});
+            return res.json({success: false, message: "Không tìm thấy tài khoản hoặc tài khoản không có quyền truy cập"});
         }
 
         await OtpDAO.createOtp(email, otpCode);
@@ -133,6 +131,71 @@ router.put('/reset-password', async function(req, res) {
         console.error(err);
         res.status(500).json({success: false, message: "Lỗi server", error: err});
     }
+});
+
+
+//User-Function
+router.get('/auth/me', JwtUtil.checkToken, async function(req, res) {
+    try{
+        const user = await AdminDAO.selectById(req.decoded._id);
+        if (!user) {
+            return res.status(401).json({success: false});
+        } else {
+            return res.json({success: true, user: user});
+        }
+    } catch (err) {
+        return res.status(500).json({success: false, message: err.message});
+    }
+});
+
+router.put('/update-profile', JwtUtil.checkToken, async function(req, res) {
+    const _id = req.decoded._id;
+    const username = req.body.username;
+    const email = req.body.email;
+    const phone = req.body.phone;
+    const userData = {_id: _id, username: username, email: email, phone: phone};
+    try {
+        const user = await AdminDAO.updateProfileById(userData);
+        if(!user) {
+            return res.json({success: false, message: "Không tìm thấy tài khoản"});
+        } else {
+            return res.json({success: true, message: "Cập nhật thành công", user: user});
+        }
+    } catch (err) {
+        return res.status(500).json({success: false, message: err.message});
+    }
 })
+
+
+//xử lý hình ảnh
+router.put('/upload-avatar', JwtUtil.checkToken, uploadPicture.single('image'), async (req, res) => {
+    try {
+        const _id = req.decoded._id
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Chưa chọn file'});
+        } else {
+            const newFileName = req.file.filename;
+
+            const webPath = 'uploads/' + newFileName;
+
+            const user = await AdminDAO.updatePictureById(_id, webPath); //Sửa để lưu lại dữ liệu vào database
+
+            if (!user) {
+                return res.json({success: false, message: "Không tìm thấy tài khoản"});
+            }
+            
+            return res.json({
+                success: true,
+                message: 'Upload thành công',
+                user: user,
+                filePath: webPath,
+            });
+        }
+    } catch (err) {
+        console.error("Lỗi khi upload hình ảnh", err);
+    }
+});
+
 
 module.exports = router;

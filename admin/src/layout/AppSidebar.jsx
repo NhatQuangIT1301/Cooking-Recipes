@@ -10,14 +10,12 @@ import {
   ListIcon,
   PageIcon,
   PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
   GroupIcon,
   IngredientIcon,
   RecipeIcon,
   TagIcon,
   PantryIcon,
+  UserCircleIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -57,13 +55,8 @@ const navItems = [
 const othersItems = [
   {
     icon: <UserCircleIcon />,
-    name: "Hồ sơ người dùng",
-    path: "profile",
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Đăng nhập",
-    path: "/admin/signin",
+    name: "Thông tin tài khoản",
+    path: "profile"
   },
   {
     icon: <PieChartIcon />,
